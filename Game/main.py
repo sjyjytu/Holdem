@@ -4,6 +4,7 @@ from random import choice
 
 class GameManager:
     def __init__(self, player_num=6, base_chip=10):
+        self.env = None
         self.player_num = player_num
         self.players = [Player(pos=i) for i in range(player_num)]
         self.alive_player_idx = list(range(player_num)) # 筹码没输光的玩家
@@ -29,20 +30,37 @@ class GameManager:
             player = self.players[pidx]
             print('玩家%d | 底牌: ' % pidx, player.card, ' | 本局下注: %d | 总筹码: %d' % (player.current_bet, player.possess))
 
-    def init_env(self):
-        return 0
+    def init_env(self, current_player_idx):
+        self.env = Env(current_player_idx, self.base_chip)
 
-    def update_env(self, env):
+    def update_env(self):
         pass
 
-    def check_match_state(self, current_player_idx, pool_possess):
-        current_player_num = len(current_player_idx)
+    def check_match_state(self):
+        current_player_num = len(self.env.current_player_idx)
         if current_player_num == 1:
-            self.end_match(current_player_idx[0], pool_possess)
-            return current_player_idx[0]
+            self.end_match(self.env.current_player_idx[0], self.env.pool_possess)
+            return self.env.current_player_idx[0]
 
     def end_match(self, winner, win_chip):
         pass
+
+    def a_round_of_bet(self, round_num):
+        for pos, pidx in enumerate(self.env.current_player_idx):
+            action = self.players[pidx].take_action(pos, self.env, 1)  # 先默认遵守规则来，但实际上可能乱了
+            self.update_env()
+
+            if action == Action.FOLD:
+                # 弃牌
+                self.env.current_player_idx = [x for x in self.env.current_player_idx if x != pidx]
+                self.players[pidx].calc_chip(0)
+                self.check_match_state()
+            elif action == Action.CHECK:
+                pass
+
+    def compare_card(self):
+        for pidx in self.env.current_player_idx:
+            self.players
 
     def play_a_game(self):
         # 返回一局的赢家，-1表示人数不足了，游戏结束
@@ -53,34 +71,46 @@ class GameManager:
         pool_possess = 0 # 底池奖励
 
         # 当前牌局的玩家，位置从大盲下家开始
-        current_player_num = self.alive_player_num
         current_player_idx = self.alive_player_idx[self.BB_pos+1:] + self.alive_player_idx[:self.BB_pos+1]
 
         # 下盲注
         self.players[self.alive_player_idx[self.BB_pos]].bet(2*self.base_chip)
         self.players[self.alive_player_idx[self.SB_pos]].bet(self.base_chip)
+        self.init_env(current_player_idx)
 
         # 开始发两张底牌
         for i in range(2):
-            for pidx in current_player_idx:
+            for pidx in self.env.current_player_idx:
                 self.players[pidx].card += self.poker.deal()
+        self.update_env()
 
         # self.print_info(current_player_idx)
-        # 开始下注
-        env = self.init_env()
-        for pos, pidx in enumerate(current_player_idx):
-            action = self.players[pidx].take_action(pos, env, 1)  # 先默认遵守规则来，但实际上可能乱了
-            env = self.update_env(env)
+        # 第一轮下注
+        self.a_round_of_bet(1)
 
-            if action == Action.FOLD:
-                # 弃牌
-                current_player_num -= 1
-                current_player_idx = [x for x in current_player_idx if x != pidx]
-                self.players[pidx].calc_chip(0)
-                self.check_match_state(current_player_idx, pool_possess)
-            elif action == Action.CHECK:
-                pass
+        # 发三张公共牌
+        self.public_cards += self.poker.deal(3)
+        self.update_env()
 
+        # 第二轮下注
+        self.a_round_of_bet(2)
+
+        # 发一张公共牌
+        self.public_cards += self.poker.deal(1)
+        self.update_env()
+
+        # 第三轮下注
+        self.a_round_of_bet(3)
+
+        # 发一张公共牌
+        self.public_cards += self.poker.deal(1)
+        self.update_env()
+
+        # 最后一轮下注
+        self.a_round_of_bet(4)
+
+        # 开牌比大小
+        self.compare_card()
 
 
 gm = GameManager()

@@ -78,6 +78,11 @@ class Poker:
         return cards
 
 
+class Env:
+    # 记录公共牌，每个人下注情况
+    def __init__(self, current_player_idx, base_chip=10):
+        self.pool_possess = 3*base_chip
+        self.current_player_idx = current_player_idx
 
 
 
