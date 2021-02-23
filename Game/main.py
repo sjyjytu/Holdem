@@ -1,5 +1,6 @@
-from Game.utils import *
 from random import choice
+from Game.utils import *
+from Game.evaluate_card import choose_own_biggest_card, compare_hands
 
 
 class GameManager:
@@ -60,7 +61,8 @@ class GameManager:
 
     def compare_card(self):
         for pidx in self.env.current_player_idx:
-            self.players
+            self.players[pidx].current_chosen_info = choose_own_biggest_card(self.players[pidx].card + self.public_cards)
+        # 按大小排序
 
     def play_a_game(self):
         # 返回一局的赢家，-1表示人数不足了，游戏结束

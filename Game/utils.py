@@ -22,6 +22,7 @@ class Player:
         self.pos = pos
         self.card = []
         self.alive = True
+        self.current_chosen_info = None
 
     def bet(self, chip):
         # 下注
@@ -34,6 +35,8 @@ class Player:
         # TODO: 自己ALL-IN了，赢不了全部筹码的处理
         self.possess += win_chip
         self.current_bet = 0
+        self.card = []
+        self.current_chosen_info = None
 
     def take_action(self, pos, env, no):
         # pos: 自己在当前牌局的位置，越大的越后下注，位置越有利; env:场上的形势; no:第几次下注
@@ -83,6 +86,7 @@ class Env:
     def __init__(self, current_player_idx, base_chip=10):
         self.pool_possess = 3*base_chip
         self.current_player_idx = current_player_idx
+
 
 
 
