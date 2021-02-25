@@ -14,6 +14,12 @@ class Action(Enum):
         self.money = 0
 
 
+class Player_State(Enum):
+    NORMAL = 1
+    ALLIN = 2
+    FOLD = 3
+
+
 class Player:
     def __init__(self, init_possess=1000, pos=0, policy=None):
         self.possess = init_possess
@@ -21,8 +27,9 @@ class Player:
         self.policy = policy
         self.pos = pos
         self.card = []
-        self.alive = True
-        self.current_chosen_info = None
+        self.have_money = True
+        self.current_chosen_card_info = None
+        self.current_state = Player_State.NORMAL
 
     def bet(self, chip):
         # 下注
@@ -83,9 +90,12 @@ class Poker:
 
 class Env:
     # 记录公共牌，每个人下注情况
-    def __init__(self, current_player_idx, base_chip=10):
+    def __init__(self, BB_pos, current_left_player_num, base_chip=10):
+        self.public_cards = []
         self.pool_possess = 3*base_chip
-        self.current_player_idx = current_player_idx
+        self.BB_pos = BB_pos
+        self.current_max_bet = 2 * base_chip
+        self.current_left_player_num = current_left_player_num
 
 
 
