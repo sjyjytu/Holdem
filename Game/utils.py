@@ -25,6 +25,9 @@ class Player_State(Enum):
     FOLD = 3
 
 
+Chosen_Card_Info = collections.namedtuple('Chosen_Card_Info', ['best_card_type', 'best_card', 'best_card_value'])
+
+
 class Player:
     def __init__(self, init_possess=1000, pos=0, policy=None):
         self.possess = init_possess
@@ -43,13 +46,12 @@ class Player:
         self.current_bet += chip
         return chip
 
-    def calc_chip(self, win_chip):
+    def reset_all_state(self):
         # 一局游戏结束时，清算赢得的钱
         # TODO: 自己ALL-IN了，赢不了全部筹码的处理
-        self.possess += win_chip
         self.current_bet = 0
         self.card = []
-        self.current_chosen_info = None
+        self.current_chosen_card_info = None
         self.current_state = Player_State.NORMAL
 
     def take_action(self, pos, env):
@@ -107,6 +109,7 @@ class Env:
         self.BB_pos = BB_pos
         self.current_max_bet = 2 * base_chip
         self.current_left_player_num = current_left_player_num
+
 
 
 

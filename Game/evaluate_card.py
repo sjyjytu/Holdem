@@ -1,5 +1,6 @@
 from collections import Counter
 from itertools import combinations
+from Game.utils import Chosen_Card_Info
 
 
 # gets the most common element from a list
@@ -189,7 +190,7 @@ def choose_own_biggest_card(seven_cards):
     for five_cards in all_combinations[1:]:
         five_cards = list(five_cards)
         result, best_card_type, best_card, best_card_value = compare_hands(best_card, five_cards)
-    return best_card_type, best_card, best_card_value
+    return Chosen_Card_Info(best_card_type, best_card, best_card_value)
 
 
 
