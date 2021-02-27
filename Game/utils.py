@@ -41,6 +41,7 @@ class Player:
         # TODO: 当前筹码不够了的处理
         self.possess -= chip
         self.current_bet += chip
+        return chip
 
     def calc_chip(self, win_chip):
         # 一局游戏结束时，清算赢得的钱
@@ -102,7 +103,7 @@ class Env:
     # 记录公共牌，每个人下注情况
     def __init__(self, BB_pos, current_left_player_num, base_chip=10):
         self.public_cards = []
-        self.pool_possess = 3*base_chip
+        self.pool_possess = 0
         self.BB_pos = BB_pos
         self.current_max_bet = 2 * base_chip
         self.current_left_player_num = current_left_player_num

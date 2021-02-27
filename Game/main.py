@@ -86,18 +86,18 @@ class GameManager:
         elif action.is_CHECK_OR_CALL():
             if bet_dist >= cur_player.possess:
                 # 筹码不够跟了，要跟就只能allin了
-                cur_player.bet(cur_player.possess)
+                self.env.pool_possess += cur_player.bet(cur_player.possess)
                 cur_player.current_state = Player_State.ALLIN
             else:
                 # check或者跟上
-                cur_player.bet(bet_dist)
+                self.env.pool_possess += cur_player.bet(bet_dist)
         elif action.is_CALL_AND_RAISE():
             if bet_dist >= cur_player.possess or bet_dist + action.money >= cur_player.possess:
                 # 筹码不够跟了，要跟就只能allin了，或者要加的超了自己财产了
-                cur_player.bet(cur_player.possess)
+                self.env.pool_possess += cur_player.bet(cur_player.possess)
                 cur_player.current_state = Player_State.ALLIN
             else:
-                cur_player.bet(bet_dist + action.money)
+                self.env.pool_possess += cur_player.bet(bet_dist + action.money)
         else:
             print("invalid action")
 
@@ -156,6 +156,11 @@ class GameManager:
         start_index = 0
         while self.env.pool_possess > 0:
             winners, start_index = self.get_next_rank_pidxes(current_pidx_and_best_card, start_index)
+            winner_num = len(winners)
+            money_per_player = self.env.pool_possess // winner_num
+            for pidx in winners:
+                # 5 15 50 60   33.3
+
 
         # 清理没钱的人，重新分配大盲位置
 
@@ -170,8 +175,8 @@ class GameManager:
         current_player_idx = self.alive_player_id[self.BB_pos+1:] + self.alive_player_id[:self.BB_pos+1]
 
         # 下盲注
-        self.players[self.alive_player_id[self.BB_pos]].bet(2*self.base_chip)
-        self.players[self.alive_player_id[self.SB_pos]].bet(self.base_chip)
+        self.env.pool_possess += self.players[self.alive_player_id[self.BB_pos]].bet(2*self.base_chip)
+        self.env.pool_possess += self.players[self.alive_player_id[self.SB_pos]].bet(self.base_chip)
         self.init_env(current_player_idx, len(self.alive_player_id))
 
         # 开始发两张底牌
