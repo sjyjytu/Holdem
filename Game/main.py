@@ -61,53 +61,69 @@ class GameManager:
                 if self.players[pidx].current_state != Player_State.FOLD:
                     self.end_match([pidx])
                     return [pidx]
+        return None
 
     def end_match(self, winners):
         # 分赃，清理没钱的人，重新分配大盲位置
         pass
 
-    def a_round_of_bet(self, round_num):
+    def process_action(self, idx):
+        pid = self.alive_player_id[idx]
+        cur_player = self.players[pid]
+        # 当前玩家的下注与最大下注的差距
+        bet_dist = self.env.current_max_bet - cur_player.current_bet
+        # if bet_dist > 0:
+        #     availble_actions = [Action.FOLD, Action.CALL]
+        action = cur_player.take_action(-1, self.env)
+        if action.is_FOLD():
+            # 弃牌
+            self.env.current_left_player_num -= 1
+            cur_player.current_state = Player_State.FOLD
+            winners = self.check_match_state()
+            if winners is not None:
+                # TODO: 结算
+                pass
+        elif action.is_CHECK_OR_CALL():
+            if bet_dist >= cur_player.possess:
+                # 筹码不够跟了，要跟就只能allin了
+                cur_player.bet(cur_player.possess)
+                cur_player.current_state = Player_State.ALLIN
+            else:
+                # check或者跟上
+                cur_player.bet(bet_dist)
+        elif action.is_CALL_AND_RAISE():
+            if bet_dist >= cur_player.possess or bet_dist + action.money >= cur_player.possess:
+                # 筹码不够跟了，要跟就只能allin了，或者要加的超了自己财产了
+                cur_player.bet(cur_player.possess)
+                cur_player.current_state = Player_State.ALLIN
+            else:
+                cur_player.bet(bet_dist + action.money)
+        else:
+            print("invalid action")
+
+        self.update_env()
+
+        # 刷新
+        FLUSH_FLAG = False
+        if cur_player.current_bet > self.env.current_max_bet:
+            self.env.current_max_bet = cur_player.current_bet
+            eidx = self._prev_bet_available_idx(idx)
+            FLUSH_FLAG = True
+        idx = self._next_bet_available_idx(idx)
+        return idx, eidx, FLUSH_FLAG
+
+    def a_round_of_bet(self):
         idx = self._next_bet_available_idx(self.env.BB_pos)  # 大盲下家能加注（除去弃牌和allin的人）开始操作
         eidx = self._prev_bet_available_idx(idx)  # 第一家操作的人的上一个能加注的人最后操作
         # 按顺序轮询这些玩家的操作，一旦有玩家的操作使得本局最大加注筹码发生改变，则刷新eidx为该玩家的上一家
-        bet_count = 1
         while True:
             while idx != eidx:
-                pid = self.alive_player_id[idx]
-                cur_player = self.players[pid]
-                # 当前玩家的下注与最大下注的差距
-                bet_dist = self.env.current_max_bet - cur_player.current_bet
-                if bet_dist > 0:
-                    availble_actions = [Action.FOLD, Action.CHECK]
-                action = cur_player.take_action(-1, self.env, bet_count)
-
-                self.update_env()
-
-                # 刷新
-                if cur_player.current_bet > self.env.current_max_bet:
-                    self.env.current_max_bet = cur_player.current_bet
-                    eidx = self._prev_bet_available_idx(idx)
-                idx = self._next_bet_available_idx(idx)
+                idx, eidx, _ = self.process_action(idx)
             # 最后一个玩家的操作，若刷新，则继续，否则，break结束本轮加注
-            last_bet_more = True
-            if last_bet_more:
-                bet_count += 1
-                eidx = self._prev_bet_available_idx(idx)
-                idx = self._next_bet_available_idx(eidx)
-            else:
+            idx, edix, last_bet_more = self.process_action(idx)
+            if not last_bet_more:
+                # 本轮加注结束
                 break
-
-        for pos, pidx in enumerate(self.env.current_player_idx):
-            action = self.players[pidx].take_action(pos, self.env, 1)  # 先默认遵守规则来，但实际上可能乱了
-            self.update_env()
-
-            if action == Action.FOLD:
-                # 弃牌
-                self.env.current_player_idx = [x for x in self.env.current_player_idx if x != pidx]
-                self.players[pidx].calc_chip(0)
-                self.check_match_state()
-            elif action == Action.CHECK:
-                pass
 
     @staticmethod
     def my_cmp(a, b):
@@ -166,28 +182,28 @@ class GameManager:
 
         # self.print_info(current_player_idx)
         # 第一轮下注
-        self.a_round_of_bet(1)
+        self.a_round_of_bet()
 
         # 发三张公共牌
         self.env.public_cards += self.poker.deal(3)
         self.update_env()
 
         # 第二轮下注
-        self.a_round_of_bet(2)
+        self.a_round_of_bet()
 
         # 发一张公共牌
         self.env.public_cards += self.poker.deal(1)
         self.update_env()
 
         # 第三轮下注
-        self.a_round_of_bet(3)
+        self.a_round_of_bet()
 
         # 发一张公共牌
         self.env.public_cards += self.poker.deal(1)
         self.update_env()
 
         # 最后一轮下注
-        self.a_round_of_bet(4)
+        self.a_round_of_bet()
 
         # 开牌比大小，分赃
         self.compare_card()

@@ -3,15 +3,20 @@ import collections
 from random import shuffle, choice
 
 
-class Action(Enum):
-    FOLD = 1
-    CHECK = 2
-    CALL = 3
-    RAISE = 4
-    ALLIN = 5
+class Action:
+    # type: FOLD, CHECK_OR_CALL, CALL_AND_RAISE
+    def __init__(self, type="FOLD", money=0):
+        self.type = type
+        self.money = money
 
-    def __init__(self):
-        self.money = 0
+    def is_FOLD(self):
+        return self.type == "FOLD"
+
+    def is_CHECK_OR_CALL(self):
+        return self.type == "CHECK_OR_CALL"
+
+    def is_CALL_AND_RAISE(self):
+        return self.type == "CALL_AND_RAISE"
 
 
 class Player_State(Enum):
@@ -44,13 +49,18 @@ class Player:
         self.current_bet = 0
         self.card = []
         self.current_chosen_info = None
+        self.current_state = Player_State.NORMAL
 
-    def take_action(self, pos, env, no):
+    def take_action(self, pos, env):
+        # 根据策略下注
         # pos: 自己在当前牌局的位置，越大的越后下注，位置越有利; env:场上的形势; no:第几次下注
-        if pos == 0:
-            return Action.RAISE
-        else:
-            return Action.CALL
+        a = input('采取动作（0弃牌，1check或call，2加注 加注金额: ')
+        a = a.strip(' ').split(' ')
+        money = 0
+        if len(a) > 1:
+            money = int(a[1])
+        no2action = {'0': 'FOLD', '1': 'CHECK_OR_CALL', '2': 'CALL_AND_RAISE'}
+        return Action(no2action[a[0]], money)
 
 
 Card = collections.namedtuple('Card', ['rank', 'suit'])
