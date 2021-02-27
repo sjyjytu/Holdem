@@ -134,33 +134,29 @@ class GameManager:
             return -1
         return 0
 
-    def get_next_rank_pidxes(self, current_pidx_and_best_card, si):
-        assert si < len(current_pidx_and_best_card)
-        get_card = current_pidx_and_best_card[si][1][1]
-        winners = [current_pidx_and_best_card[si][0]]
-        si += 1
-        while si < len(current_pidx_and_best_card) and compare_hands(get_card, current_pidx_and_best_card[si][1][1]) == "TIE":
-            winners.append(current_pidx_and_best_card[si][0])
-            si += 1
-        return winners, si
-
     def compare_card(self):
-        current_pidx_and_best_card = []
-        for pidx in self.env.current_player_idx:
-            self.players[pidx].current_chosen_card_info = choose_own_biggest_card(self.players[pidx].card + self.env.public_cards)
-            current_pidx_and_best_card.append((pidx, self.players[pidx].current_chosen_card_info))
+        # 遍历，找出弃牌的人，把他们的钱加入到底池，记录出要比牌的人
+        buttom_pool = 0
+        fold_pidx = []
+        candidate_pidx_and_bet = []
+        for pidx in self.alive_player_id:
+            cur_bet = self.players[pidx].current_bet
+            if self.players[pidx].current_state == Player_State.FOLD:
+                buttom_pool += cur_bet
+                fold_pidx.append(pidx)
+            else:
+                candidate_pidx_and_bet.append((pidx, cur_bet))
+        sorted(candidate_pidx_and_bet, key=lambda x:(x[1], x[0]))
+
+        # current_pidx_and_best_card = []
+        # for pidx in self.env.current_player_idx:
+        #     self.players[pidx].current_chosen_card_info = choose_own_biggest_card(self.players[pidx].card + self.env.public_cards)
+        #     current_pidx_and_best_card.append((pidx, self.players[pidx].current_chosen_card_info))
         # 按大小排序，最大的排第一，可能会有并列的情况
-        current_pidx_and_best_card = sorted(current_pidx_and_best_card, key=functools.cmp_to_key(self.my_cmp))
+        # current_pidx_and_best_card = sorted(current_pidx_and_best_card, key=functools.cmp_to_key(self.my_cmp))
 
         # 开始分赃，要考虑有人ALL-IN吃不下所有，以及牌一样大平分的情况
-        start_index = 0
-        while self.env.pool_possess > 0:
-            winners, start_index = self.get_next_rank_pidxes(current_pidx_and_best_card, start_index)
-            winner_num = len(winners)
-            money_per_player = self.env.pool_possess // winner_num
-            for pidx in winners:
-                # 5 15 50 60   33.3
-
+        # 想通过一次排序就确认不太行，还是要先根据下注排序，然后划分底池和边池，然后对每个池的玩家牌大小排序，选出牌最好的人把那个池吃了
 
         # 清理没钱的人，重新分配大盲位置
 
@@ -172,17 +168,17 @@ class GameManager:
         self.poker.reset_card()
 
         # 当前牌局的玩家，位置从大盲下家开始
-        current_player_idx = self.alive_player_id[self.BB_pos+1:] + self.alive_player_id[:self.BB_pos+1]
+        # current_player_idx = self.alive_player_id[self.BB_pos+1:] + self.alive_player_id[:self.BB_pos+1]
 
         # 下盲注
         self.env.pool_possess += self.players[self.alive_player_id[self.BB_pos]].bet(2*self.base_chip)
         self.env.pool_possess += self.players[self.alive_player_id[self.SB_pos]].bet(self.base_chip)
-        self.init_env(current_player_idx, len(self.alive_player_id))
+        # TODO: 开局即allin
+        self.init_env(self.BB_pos, len(self.alive_player_id))
 
         # 开始发两张底牌
-        for i in range(2):
-            for pidx in self.env.current_player_idx:
-                self.players[pidx].card += self.poker.deal()
+        for pidx in self.alive_player_id:
+            self.players[pidx].card += self.poker.deal(2)
         self.update_env()
 
         # self.print_info(current_player_idx)

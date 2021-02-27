@@ -1,0 +1,4 @@
+- BB pos 有问题，每局游戏都init env，但是又由env来记录bb pos
+- 最后要清理没钱的人（alive player），不够大小盲的也滚了，那还要处理刚刚好够，开局就allin（20）的
+- 下注要下整数之类的，
+- 最后要重置所有状态（player state）之类的

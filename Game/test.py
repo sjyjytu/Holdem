@@ -45,5 +45,8 @@
 # p2.current_state = Player_State.ALLIN
 # print(players[2].current_state)
 
-a = '  d a  '
-print(a.strip(' ').split(' '))
+# a = '  d a  '
+# print(a.strip(' ').split(' '))
+
+a = [1,2,3,4,5,6]
+print(a[3:])
