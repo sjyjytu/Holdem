@@ -29,11 +29,11 @@ Chosen_Card_Info = collections.namedtuple('Chosen_Card_Info', ['best_card_type',
 
 
 class Player:
-    def __init__(self, init_possess=1000, pos=0, policy=None):
+    def __init__(self, init_possess=1000, id=0, policy=None):
         self.possess = init_possess
         self.current_bet = 0
         self.policy = policy
-        self.pos = pos
+        self.id = id
         self.card = []
         self.have_money = True
         self.current_chosen_card_info = None
@@ -47,8 +47,7 @@ class Player:
         return chip
 
     def reset_all_state(self):
-        # 一局游戏结束时，清算赢得的钱
-        # TODO: 自己ALL-IN了，赢不了全部筹码的处理
+        # 一局游戏结束时，重置玩家状态
         self.current_bet = 0
         self.card = []
         self.current_chosen_card_info = None
@@ -57,12 +56,12 @@ class Player:
     def take_action(self, pos, env):
         # 根据策略下注
         # pos: 自己在当前牌局的位置，越大的越后下注，位置越有利; env:场上的形势; no:第几次下注
-        a = input('采取动作（0弃牌，1check或call，2加注 加注金额: ')
+        a = input('玩家%d 采取动作（1弃牌，2check或call，3加注 加注金额）: ' % self.id)
         a = a.strip(' ').split(' ')
         money = 0
         if len(a) > 1:
             money = int(a[1])
-        no2action = {'0': 'FOLD', '1': 'CHECK_OR_CALL', '2': 'CALL_AND_RAISE'}
+        no2action = {'1': 'FOLD', '2': 'CHECK_OR_CALL', '3': 'CALL_AND_RAISE'}
         return Action(no2action[a[0]], money)
 
 
@@ -72,7 +71,7 @@ Card = collections.namedtuple('Card', ['rank', 'suit'])
 class Poker:
     ranks = [str(n) for n in range(2, 11)]
     ranks.extend('JQKA')
-    suits = 'spades hearts diamonds clubs'.split()
+    suits = 'spades hearts clubs diamonds'.split()
 
     def __init__(self):
         # 初始化 FrenchDeck 类，创建 52 张牌 self._cards

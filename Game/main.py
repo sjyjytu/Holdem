@@ -8,7 +8,7 @@ class GameManager:
     def __init__(self, player_num=6, base_chip=10):
         self.env = None
         self.player_num = player_num
-        self.players = [Player(pos=i) for i in range(player_num)]
+        self.players = [Player(id=i) for i in range(player_num)]
         self.alive_player_id = list(range(player_num)) # 筹码没输光的玩家
         self.alive_player_num = player_num
         self.poker = Poker()
@@ -39,21 +39,25 @@ class GameManager:
     def _prev_bet_available_idx(self, i):
         pi = self._prev_idx(i)
         while self.players[self.alive_player_id[pi]].current_state != Player_State.NORMAL:
-            pi = self._next_idx(pi)
+            pi = self._prev_idx(pi)
         return pi
 
     def print_info(self):
-        print('公共牌：', self.env.public_cards)
+        print()
+        suit2word = {'spades': '黑桃', 'hearts': '红心', 'clubs': '梅花', 'diamonds': '方片'}
+        print('公共牌：', [suit2word[card.suit]+card.rank for card in self.env.public_cards])
+        print('大盲位置：', self.alive_player_id[self.BB_pos])
         for pid in self.alive_player_id:
             player = self.players[pid]
-            print('玩家%d | 底牌: ' % pid, player.card, ' | 状态: ', player.current_state,
+            print('玩家%d | 底牌: ' % pid, [suit2word[card.suit]+card.rank for card in player.card], ' | 状态: ', player.current_state,
                   ' | 本局下注: %d | 总筹码: %d' % (player.current_bet, player.possess))
 
     def init_env(self, BB_pos, current_left_player_num):
         self.env = Env(BB_pos, current_left_player_num, self.base_chip)
 
     def update_env(self):
-        pass
+        # TODO: 更新环境，记录玩家动作
+        self.print_info()
 
     def check_match_state(self):
         if self.env.current_left_player_num == 1:
@@ -104,7 +108,7 @@ class GameManager:
                 # check或者跟上
                 self.env.pool_possess += cur_player.bet(bet_dist)
         elif action.is_CALL_AND_RAISE():
-            if bet_dist >= cur_player.possess or bet_dist + action.money >= cur_player.possess:
+            if bet_dist + action.money >= cur_player.possess:
                 # 筹码不够跟了，要跟就只能allin了，或者要加的超了自己财产了
                 self.env.pool_possess += cur_player.bet(cur_player.possess)
                 cur_player.current_state = Player_State.ALLIN
@@ -181,11 +185,11 @@ class GameManager:
             if i != len(sorted_bet) - 1:
                 # 边池大小
                 margin_pool_dist = sorted_bet[i] - sorted_bet[i+1]
-                accumulate_participants_num += len(sorted_bet[i])
+                accumulate_participants_num += len(candidate_bet_pidx_dict[sorted_bet[i]])
                 pool_total_award = accumulate_participants_num * margin_pool_dist  # 当前边池的总筹码奖励
             else:
                 # 底池
-                accumulate_participants_num += len(sorted_bet[i])
+                accumulate_participants_num += len(candidate_bet_pidx_dict[sorted_bet[i]])
                 pool_total_award = accumulate_participants_num * sorted_bet[i] + buttom_pool  # 加上弃牌的底池
 
             # 将当前牌型最大的人跟新加入的人比一比，比出最大的玩家（们）
@@ -226,11 +230,12 @@ class GameManager:
         # 当前牌局的玩家，位置从大盲下家开始
         # current_player_idx = self.alive_player_id[self.BB_pos+1:] + self.alive_player_id[:self.BB_pos+1]
 
-        # 下盲注
-        self.env.pool_possess += self.players[self.alive_player_id[self.BB_pos]].bet(2*self.base_chip)
-        self.env.pool_possess += self.players[self.alive_player_id[self.SB_pos]].bet(self.base_chip)
         # TODO: 开局即allin
         self.init_env(self.BB_pos, len(self.alive_player_id))
+
+        # 下盲注
+        self.env.pool_possess += self.players[self.alive_player_id[self.BB_pos]].bet(2 * self.base_chip)
+        self.env.pool_possess += self.players[self.alive_player_id[self.SB_pos]].bet(self.base_chip)
 
         # 开始发两张底牌
         for pidx in self.alive_player_id:
@@ -270,8 +275,9 @@ class GameManager:
         self.compare_card()
 
 
-gm = GameManager()
+gm = GameManager(player_num=4)
 gm.play_a_game()
+gm.print_info()
 
 
 

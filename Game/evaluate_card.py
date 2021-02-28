@@ -10,8 +10,9 @@ def Most_Common(lst):
 
 
 # gets card value from  a hand. converts A to 14,  is_seq function will convert the 14 to a 1 when necessary to evaluate A 2 3 4 5 straights
-def convert_to_nums(h, nums={'J':11, 'Q':12, 'K':13, "A": 14}):
-    return [nums[h[x].rank] if h[x].rank in nums.keys() else int(x.rank) for x in h]
+def convert_to_nums(h):
+    nums = {'J': 11, 'Q': 12, 'K': 13, "A": 14}
+    return [nums[x.rank] if x.rank in nums.keys() else int(x.rank) for x in h]
 
 
 # is royal flush
