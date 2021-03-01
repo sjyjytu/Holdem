@@ -110,6 +110,20 @@ class Env:
         self.current_left_player_num = current_left_player_num
 
 
+class LocalEnvInfo:
+    def __init__(self):
+        self.public_cards = []
+        self.pool_possess = 0
+        self.BB_id = 0
+        self.current_max_bet = 0
+        self.current_left_player_num = 0
+
+    def update(self, pc, pp, bbid, cmb, clpn):
+        self.public_cards = pc
+        self.pool_possess = pp
+        self.BB_id = bbid
+        self.current_max_bet = cmb
+        self.current_left_player_num = clpn
 
 
 

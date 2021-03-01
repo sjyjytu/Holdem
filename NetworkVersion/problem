@@ -1,0 +1,4 @@
+- 目前只考虑没有人退出（掉线），不remove不破坏player list的情况
+- 如果考虑，refresh_player_public_info等可能会出问题\
+
+- 应该是每次process动作后都要更新玩家信息和env

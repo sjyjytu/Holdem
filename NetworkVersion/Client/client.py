@@ -23,18 +23,21 @@ ADDRESS = ('127.0.0.1', 8712)  # ('foxyball.cn', 8712)  # 如果服务端在本�
 
 g_role = None  # 玩家操作的角色
 
-g_players = []  # 所有玩家
+g_players = {}  # 所有玩家
 
 g_client = socket.socket()  # 创建 socket 对象
+
+env = LocalEnvInfo()
 
 
 class Role:
     def __init__(self, name):
         self.id = -1
         self.name = name
+        self.card = []  # TODO: 记得每局结束后要清理
 
 
-class LocalPlayer:
+class PlayerPublicInfo:
     def __init__(self):
         self.possess = 0
         self.cur_bet = 0
@@ -80,25 +83,60 @@ def send_get_ready():
     g_client.sendall(data)
 
 
+def send_action(action_type, money):
+    """
+    告诉服务端玩家准备好了
+    """
+    # 构建数据包
+    p = Protocol()
+    p.add_str("action")
+    p.add_int32(g_role.id)
+    p.add_int32(action_type)
+    p.add_int32(money)
+    data = p.get_pck_has_head()
+    # 发送数据包
+    g_client.sendall(data)
+
+
 def pck_handler(pck):
+    global g_players, g_role, env
     p = Protocol(pck)
     pck_type = p.get_str()
 
-    if pck_type == 'playermove':  # 玩家移动的数据包
-        x = p.get_int32()
-        y = p.get_int32()
-        name = p.get_str()
-        for r in g_other_player:
-            if r.name == name:
-                r.x = x
-                r.y = y
-                break
-    elif pck_type == 'newplayer':  # 新玩家数据包
-        x = p.get_int32()
-        y = p.get_int32()
-        name = p.get_str()
-        r = Role(x, y, name)
-        g_other_player.append(r)
+    if pck_type == 'init_players':  # 玩家移动的数据包
+        player_num = p.get_int32()
+        g_players = {i: PlayerPublicInfo() for i in range(player_num)}
+    elif pck_type == 'public_info':  # 新玩家数据包
+        player_num = p.get_int32()
+        for i in range(player_num):
+            pid = p.get_int32()
+            possess = p.get_int32()
+            cur_bet = p.get_int32()
+            current_state_value = p.get_int32()
+            g_players[pid].possess = possess
+            g_players[pid].cur_bet = cur_bet
+            g_players[pid].current_state = Player_State(current_state_value)
+    elif pck_type == 'private_info':
+        str_cards = p.get_str()
+        g_role.card = str_cards.split(' ')
+    elif pck_type == 'env_info':
+        str_public_cards = p.get_str()
+        public_cards = str_public_cards.split(' ')
+        env.update(public_cards, p.get_int32(), p.get_int32(), p.get_int32(), p.get_int32())
+    elif pck_type == 'ask_for_action':
+        a = input('玩家请采取动作（1弃牌，2check或call，3加注 加注金额）: ')
+        a = a.strip(' ').split(' ')
+        money = 0
+        if len(a) > 1 and a[1].isdigit():
+            money = int(a[1])
+        while a[0] not in ['1', '2', '3'] or money < 0:
+            print('输入不合法！')
+            a = input('玩家请采取动作（1弃牌，2check或call，3加注 加注金额）: ')
+            a = a.strip(' ').split(' ')
+            money = 0
+            if len(a) > 1 and a[1].isdigit():
+                money = int(a[1])
+        send_action(int(a[0]), money)
     elif pck_type == 'logout':  # 玩家掉线
         # name = p.get_str()
         # for r in g_other_player:

@@ -1,5 +1,7 @@
 from NetworkVersion.utils import *
 from NetworkVersion.evaluate_card import choose_own_biggest_card, compare_hands
+from NetworkVersion.Server.protocal import Protocol
+import time
 
 
 class GameManager:
@@ -7,18 +9,33 @@ class GameManager:
         self.env = None
         self.player_num = player_num
         self.players = [Player(id=i) for i in range(player_num)]
-        self.alive_player_id = list(range(player_num)) # 筹码没输光的玩家
+        self.alive_player_id = list(range(player_num))  # 筹码没输光的玩家
         self.alive_player_num = player_num
         self.poker = Poker()
         self.base_chip = base_chip
         self.is_running = False
 
+        self.player_actions = [Action("FOLD") for i in range(player_num)]
+        self.player_action_flag = [False for i in range(player_num)]
+
         # 初始化大小盲注位置，注意这个pos是针对alive_player的
         self.BB_pos = choice(range(self.alive_player_num))
         self.SB_pos = (self.BB_pos - 1 + self.alive_player_num) % self.alive_player_num
 
-    def delay_init(self):
-        pass
+    def get_public_info_by_pid(self, pid):
+        return self.players[pid].possess, self.players[pid].current_bet, self.players[pid].current_state
+
+    def get_player_card_by_pid(self, pid):
+        suit2word = {'spades': '黑桃', 'hearts': '红心', 'clubs': '梅花', 'diamonds': '方片'}
+        return [suit2word[card.suit] + card.rank for card in self.players[pid].card]
+
+    def get_env_info(self):
+        suit2word = {'spades': '黑桃', 'hearts': '红心', 'clubs': '梅花', 'diamonds': '方片'}
+        public_card = [suit2word[card.suit] + card.rank for card in self.env.public_cards]
+        pool_possess, BB_id, current_max_bet, current_left_player_num \
+            = self.env.pool_possess, self.alive_player_id[self.BB_pos], \
+              self.env.current_max_bet, self.env.current_left_player_num
+        return public_card, pool_possess, BB_id, current_max_bet, current_left_player_num
 
     def _next_idx(self, i):
         return (i + 1) % self.alive_player_num
@@ -47,11 +64,12 @@ class GameManager:
     def print_info(self):
         print()
         suit2word = {'spades': '黑桃', 'hearts': '红心', 'clubs': '梅花', 'diamonds': '方片'}
-        print('公共牌：', [suit2word[card.suit]+card.rank for card in self.env.public_cards])
+        print('公共牌：', [suit2word[card.suit] + card.rank for card in self.env.public_cards])
         print('大盲位置：', self.alive_player_id[self.BB_pos])
         for pid in self.alive_player_id:
             player = self.players[pid]
-            print('玩家%d | 底牌: ' % pid, [suit2word[card.suit]+card.rank for card in player.card], ' | 状态: ', player.current_state,
+            print('玩家%d | 底牌: ' % pid, [suit2word[card.suit] + card.rank for card in player.card], ' | 状态: ',
+                  player.current_state,
                   ' | 本局下注: %d | 总筹码: %d' % (player.current_bet, player.possess))
 
     def init_env(self, BB_pos, current_left_player_num):
@@ -89,14 +107,29 @@ class GameManager:
         self.BB_pos = new_alive_player_id.index(next_BB_pidx)
         self.SB_pos = (self.BB_pos - 1 + self.alive_player_num) % self.alive_player_num
 
-    def process_action(self, idx, eidx):
+    def process_action(self, idx, eidx, g_conn_pool):
         pid = self.alive_player_id[idx]
         cur_player = self.players[pid]
         # 当前玩家的下注与最大下注的差距
         bet_dist = self.env.current_max_bet - cur_player.current_bet
         # if bet_dist > 0:
         #     availble_actions = [Action.FOLD, Action.CALL]
-        action = cur_player.take_action(-1, self.env)
+        # action = cur_player.take_action(-1, self.env)
+
+        # 向对应player索要action
+        self.player_action_flag[pid] = False  # 先重置，尽量减少延迟带来的bug
+        ret = Protocol()
+        ret.add_str("ask_for_action")
+        g_conn_pool[pid].conn.sendall(ret.get_pck_has_head())
+        # 等待返回gm用一个数组flag来记录
+        timeout = 0  # 等待玩家40秒
+        while not self.player_action_flag[pid] and timeout < 80:
+            time.sleep(0.5)
+            timeout += 1
+        action = Action("FOLD")  # 超时默认弃牌
+        if self.player_action_flag[pid]:
+            action = self.player_actions[pid]
+
         if action.is_FOLD():
             # 弃牌
             self.env.current_left_player_num -= 1
@@ -119,8 +152,6 @@ class GameManager:
         else:
             print("invalid action")
 
-        self.update_env()
-
         # 刷新
         FLUSH_FLAG = False
         if cur_player.current_bet > self.env.current_max_bet:
@@ -128,20 +159,23 @@ class GameManager:
             eidx = self._prev_bet_available_idx(idx)
             FLUSH_FLAG = True
         idx = self._next_bet_available_idx(idx)
+
+        self.update_env()
+        # TODO: 调用refresh_player_public_info和refresh_env_info
         return idx, eidx, FLUSH_FLAG
 
-    def a_round_of_bet(self):
+    def a_round_of_bet(self, g_conn_pool):
         idx = self._next_bet_available_idx(self.BB_pos)  # 大盲下家能加注（除去弃牌和allin的人）开始操作
         eidx = self._prev_bet_available_idx(idx)  # 第一家操作的人的上一个能加注的人最后操作
         # 按顺序轮询这些玩家的操作，一旦有玩家的操作使得本局最大加注筹码发生改变，则刷新eidx为该玩家的上一家
         while True:
             while idx != eidx:
-                idx, eidx, _ = self.process_action(idx, eidx)
+                idx, eidx, _ = self.process_action(idx, eidx, g_conn_pool)
 
             if self.env.current_left_player_num == 1:
                 break
             # 最后一个玩家的操作，若刷新，则继续，否则，break结束本轮加注
-            idx, eidx, last_bet_more = self.process_action(idx, eidx)
+            idx, eidx, last_bet_more = self.process_action(idx, eidx, g_conn_pool)
             if not last_bet_more:
                 # 本轮加注结束
                 break
@@ -161,7 +195,8 @@ class GameManager:
                 fold_pidx.append(pidx)
             else:
                 # 玩家选出自己最大的牌型
-                self.players[pidx].current_chosen_card_info = choose_own_biggest_card(self.players[pidx].card + self.env.public_cards)
+                self.players[pidx].current_chosen_card_info = choose_own_biggest_card(
+                    self.players[pidx].card + self.env.public_cards)
 
                 # 玩家下注筹码与pidx记录起来
                 if cur_bet in candidate_bet_pidx_dict.keys():
@@ -177,7 +212,7 @@ class GameManager:
         for i in range(len(sorted_bet)):
             if i != len(sorted_bet) - 1:
                 # 边池大小
-                margin_pool_dist = sorted_bet[i] - sorted_bet[i+1]
+                margin_pool_dist = sorted_bet[i] - sorted_bet[i + 1]
                 accumulate_participants_num += len(candidate_bet_pidx_dict[sorted_bet[i]])
                 pool_total_award = accumulate_participants_num * margin_pool_dist  # 当前边池的总筹码奖励
             else:
@@ -272,14 +307,3 @@ if __name__ == '__main__':
     gm = GameManager(player_num=4)
     gm.play_a_game()
     gm.print_info()
-
-
-
-
-
-
-
-
-
-
-
