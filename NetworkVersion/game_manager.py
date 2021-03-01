@@ -1,7 +1,5 @@
-from random import choice
-import functools
-from Game.utils import *
-from Game.evaluate_card import choose_own_biggest_card, compare_hands
+from NetworkVersion.utils import *
+from NetworkVersion.evaluate_card import choose_own_biggest_card, compare_hands
 
 
 class GameManager:
@@ -266,9 +264,10 @@ class GameManager:
         self.compare_card()
 
 
-gm = GameManager(player_num=4)
-gm.play_a_game()
-gm.print_info()
+if __name__ == '__main__':
+    gm = GameManager(player_num=4)
+    gm.play_a_game()
+    gm.print_info()
 
 
 
