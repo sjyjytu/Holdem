@@ -10,6 +10,7 @@ ADDRESS = ('127.0.0.1', 8712)  # 绑定地址
 
 g_conn_pool = []  # 连接池
 
+ready_num = 0  # TODO: 记得清零
 gm = None
 
 
@@ -17,6 +18,8 @@ class Conn:
     def __init__(self, conn):
         self.conn = conn
         self.name = None
+        self.id = -1
+        self.is_ready = False
 
 
 class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
@@ -100,25 +103,28 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         p = Protocol(pck)
         pck_type = p.get_str()
 
-        if pck_type == 'newrole':
+        if pck_type == 'register':
             self.get_conn().name = p.get_str()
-            self.new_role()  # 告诉当前服务器的其他玩家，有新玩家加入
-            self.other_role()  # 告诉新加入的玩家，当前服务器的其他玩家信息
+            # self.new_role()  # 告诉当前服务器的其他玩家，有新玩家加入
+            # self.other_role()  # 告诉新加入的玩家，当前服务器的其他玩家信息
 
-        elif pck_type == 'move':
-            self.get_conn().x = p.get_int32()
-            self.get_conn().y = p.get_int32()
-            self.move_role()
+        elif pck_type == 'ready':
+            self.get_conn().is_ready = True
+            global ready_num
+            ready_num += 1
+            if
+            # self.move_role()
 
     def remove(self):
-        # 告诉各个客户端有玩家离线
-        ret = Protocol()
-        ret.add_str("logout")
-        ret.add_str(self.get_conn().name)
-        for r in g_conn_pool:
-            if r != self.get_conn():
-                r.conn.sendall(ret.get_pck_has_head())
-        g_conn_pool.remove(self.get_conn())
+        # # 告诉各个客户端有玩家离线
+        # ret = Protocol()
+        # ret.add_str("logout")
+        # ret.add_str(self.get_conn().name)
+        # for r in g_conn_pool:
+        #     if r != self.get_conn():
+        #         r.conn.sendall(ret.get_pck_has_head())
+        # g_conn_pool.remove(self.get_conn())
+        pass
 
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):

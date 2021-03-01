@@ -9,6 +9,8 @@ import socket  # 导入 socket 模块
 
 from NetworkVersion.Client.protocal import Protocol
 
+from NetworkVersion.utils import *
+
 ADDRESS = ('127.0.0.1', 8712)  # ('foxyball.cn', 8712)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
 
 # WIDTH, HEIGHT = 640, 480  # 窗口大小
@@ -19,18 +21,24 @@ ADDRESS = ('127.0.0.1', 8712)  # ('foxyball.cn', 8712)  # 如果服务端在本�
 #
 # g_sur_role = None  # 人物的role
 
-g_player = None  # 玩家操作的角色
+g_role = None  # 玩家操作的角色
 
-g_other_player = []  # 其他玩家
+g_players = []  # 所有玩家
 
 g_client = socket.socket()  # 创建 socket 对象
 
 
-class LocalPlayer:
+class Role:
     def __init__(self, name):
         self.id = -1
         self.name = name
+
+
+class LocalPlayer:
+    def __init__(self):
         self.possess = 0
+        self.cur_bet = 0
+        self.current_state = Player_State.NORMAL
 
 
 def send_role_move():
@@ -47,21 +55,29 @@ def send_role_move():
     g_client.sendall(data)
 
 
-def send_new_role():
+def register():
     """
     告诉服务端有新玩家加入
     """
     # 构建数据包
     p = Protocol()
-    p.add_str("newrole")
-    p.add_str(g_player.name)
+    p.add_str("register")
+    p.add_str(g_role.name)
     data = p.get_pck_has_head()
     # 发送数据包
     g_client.sendall(data)
 
 
 def send_get_ready():
-    pass
+    """
+    告诉服务端玩家准备好了
+    """
+    # 构建数据包
+    p = Protocol()
+    p.add_str("ready")
+    data = p.get_pck_has_head()
+    # 发送数据包
+    g_client.sendall(data)
 
 
 def pck_handler(pck):
@@ -84,11 +100,13 @@ def pck_handler(pck):
         r = Role(x, y, name)
         g_other_player.append(r)
     elif pck_type == 'logout':  # 玩家掉线
-        name = p.get_str()
-        for r in g_other_player:
-            if r.name == name:
-                g_other_player.remove(r)
-                break
+        # name = p.get_str()
+        # for r in g_other_player:
+        #     if r.name == name:
+        #         g_other_player.remove(r)
+        #         break
+        # 按理来说 只有在游戏没开始阶段离开会有影响，游戏中别人跑了关我屁事
+        pass
 
 
 def msg_handler():
@@ -117,7 +135,7 @@ def init_game():
     初始化游戏
     """
     # global g_screen, g_sur_role, g_player, g_font
-    global g_player
+    global g_role, g_players
     # # 初始化pygame
     # pygame.init()
     # pygame.display.set_caption('网络游戏Demo')
@@ -136,7 +154,7 @@ def init_game():
     #               '夜云', '乐珍']
     # name = random.choice(last_name) + random.choice(first_name)
     name = input('输入你的昵称：')
-    g_player = LocalPlayer(name)
+    g_role = Role(name)
 
     # 与服务器建立连接
     g_client.connect(ADDRESS)
@@ -145,7 +163,7 @@ def init_game():
     thead.setDaemon(True)
     thead.start()
     # 告诉服务端有新玩家
-    send_new_role()
+    register()
 
 
 def handler_event():
@@ -154,15 +172,15 @@ def handler_event():
         if event.type == pygame.QUIT:
             sys.exit()
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w:
-                g_player.y -= 5
-            elif event.key == pygame.K_s:
-                g_player.y += 5
-            elif event.key == pygame.K_a:
-                g_player.x -= 5
-            elif event.key == pygame.K_d:
-                g_player.x += 5
-            send_role_move()  # 告诉服务器，自己移动了
+            if event.key == pygame.K_9:
+                send_get_ready()
+            # elif event.key == pygame.K_s:
+            #     g_player.y += 5
+            # elif event.key == pygame.K_a:
+            #     g_player.x -= 5
+            # elif event.key == pygame.K_d:
+            #     g_player.x += 5
+            # send_role_move()  # 告诉服务器，自己移动了
 
 
 def update_logic():
@@ -196,7 +214,7 @@ def main_loop():
     """
     while True:
         # FPS=60
-        pygame.time.delay(32)
+        # pygame.time.delay(32)
         # 逻辑更新
         update_logic()
         # 视图更新

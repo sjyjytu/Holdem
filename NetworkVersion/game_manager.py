@@ -11,10 +11,14 @@ class GameManager:
         self.alive_player_num = player_num
         self.poker = Poker()
         self.base_chip = base_chip
+        self.is_running = False
 
         # 初始化大小盲注位置，注意这个pos是针对alive_player的
         self.BB_pos = choice(range(self.alive_player_num))
         self.SB_pos = (self.BB_pos - 1 + self.alive_player_num) % self.alive_player_num
+
+    def delay_init(self):
+        pass
 
     def _next_idx(self, i):
         return (i + 1) % self.alive_player_num
