@@ -12,13 +12,14 @@ from NetworkVersion.game_manager import GameManager
 from NetworkVersion.utils import Action, Player_State
 
 ADDRESS = ('127.0.0.1', 8712)  # 绑定地址
+# ADDRESS = ('0.0.0.0', 23456)  # 绑定地址
 
 g_conn_pool = []  # 连接池
 
 ready_num = 0  # TODO: 记得清零
 gm = None
 
-LEAST_PLAYER_NUM = 4
+LEAST_PLAYER_NUM = 2
 
 class Conn:
     def __init__(self, conn):
@@ -37,6 +38,8 @@ def init_client_players():
         ret.add_str("init_players")
         ret.add_int32(player_num)
         ret.add_int32(r.id)
+        for k in g_conn_pool:
+            ret.add_str(k.name)
         r.conn.sendall(ret.get_pck_has_head())
 
 
