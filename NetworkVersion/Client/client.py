@@ -16,8 +16,8 @@ from NetworkVersion.Client.protocal import Protocol
 
 from NetworkVersion.utils import *
 
-ADDRESS = ('127.0.0.1', 8712)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
-
+# ADDRESS = ('127.0.0.1', 8712)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
+ADDRESS = ('8.133.165.59', 23456)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
 # WIDTH, HEIGHT = 640, 480  # 窗口大小
 #
 # g_font = None

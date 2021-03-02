@@ -11,8 +11,8 @@ from NetworkVersion.Server.protocal import Protocol
 from NetworkVersion.game_manager import GameManager
 from NetworkVersion.utils import Action, Player_State
 
-ADDRESS = ('127.0.0.1', 8712)  # 绑定地址
-# ADDRESS = ('0.0.0.0', 23456)  # 绑定地址
+# ADDRESS = ('127.0.0.1', 8712)  # 绑定地址
+ADDRESS = ('0.0.0.0', 23456)  # 绑定地址
 
 g_conn_pool = []  # 连接池
 

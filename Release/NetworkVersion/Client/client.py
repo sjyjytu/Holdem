@@ -16,9 +16,8 @@ from NetworkVersion.Client.protocal import Protocol
 
 from NetworkVersion.utils import *
 
-# ADDRESS = ('127.0.0.1', 8712)  # ('foxyball.cn', 8712)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
-ADDRESS = ('8.133.165.59', 23456)  # ('foxyball.cn', 8712)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
-
+# ADDRESS = ('127.0.0.1', 8712)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
+ADDRESS = ('8.133.165.59', 23456)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
 # WIDTH, HEIGHT = 640, 480  # 窗口大小
 #
 # g_font = None
@@ -35,7 +34,7 @@ g_client = socket.socket()  # 创建 socket 对象
 
 env = LocalEnvInfo()
 
-game_waiting = Event()
+ask_for_instr = Event()
 
 
 class Role:
@@ -45,7 +44,8 @@ class Role:
 
 
 class PlayerPublicInfo:
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.possess = 0
         self.cur_bet = 0
         self.current_state = Player_State.NORMAL
@@ -70,7 +70,7 @@ def print_info(clear=False):
             print('|', name.center(9), '*|', str(pid).center(3), '|', gp.current_state.name.center(6),
                   '|', str(gp.cur_bet).center(8), '|', str(gp.possess).center(8), '|', gp.card)
         else:
-            name = '---'
+            name = gp.name
             print('|', name.center(10), '|', str(pid).center(3), '|', gp.current_state.name.center(6),
                   '|', str(gp.cur_bet).center(8), '|', str(gp.possess).center(8), '|', gp.card)
 
@@ -123,11 +123,11 @@ def pck_handler(pck):
         print('*' * 10 + 'Game Start!' + '*' * 10)
         for k in g_players.keys():
             g_players[k].card = []
-        game_waiting.clear()
     elif pck_type == 'init_players':  # 玩家移动的数据包
         player_num = p.get_int32()
         g_role.id = p.get_int32()
-        g_players = {i: PlayerPublicInfo() for i in range(player_num)}
+        g_players = {i: PlayerPublicInfo(p.get_str()) for i in range(player_num)}
+
     elif pck_type == 'public_info':  # 新玩家数据包
         player_num = p.get_int32()
         for i in range(player_num):
@@ -176,7 +176,7 @@ def pck_handler(pck):
 
     elif pck_type == 'game_over':
         print('*' * 10 + 'Game Over!' + '*' * 10)
-        game_waiting.set()
+        ask_for_instr.set()
 
     elif pck_type == 'logout':  # 玩家掉线
         # name = p.get_str()
@@ -292,7 +292,6 @@ def main_loop():
     """
     游戏主循环
     """
-    game_waiting.set()
     while True:
         # FPS=60
         # pygame.time.delay(32)
@@ -300,17 +299,22 @@ def main_loop():
         # update_logic()
         # 视图更新
         # update_view()
-        if game_waiting.is_set():
-            # 游戏没开始，输入命令来准备、退出之类的
-            instr = input('输入命令：')
-            if instr == 'q':
-                sys.exit()
-            elif instr == '9':
-                # 准备开始游戏，应该在开始游戏的时候clear掉
-                send_get_ready()
-        else:
-            # 游戏正在运行中，把控制权转移给另一个线程
-            game_waiting.wait()  # 等待set为止，也就是在游戏结束的时候set
+
+        # 游戏没开始，输入命令来准备、退出之类的
+        instr = input('输入命令（r准备，q退出）：')
+        while instr not in ['q', 'r']:
+            print('命令不正确！')
+            instr = input('输入命令（r准备，q退出）：')
+        if instr == 'q':
+            sys.exit()
+        elif instr == 'r':
+            # 准备开始游戏
+            ask_for_instr.clear()
+            send_get_ready()
+
+        # 游戏正在运行中，把控制权转移给另一个线程
+        print('等待其他玩家准备...')
+        ask_for_instr.wait()  # 等待set为止，也就是在游戏结束的时候set
         
         
 if __name__ == '__main__':
