@@ -1,3 +1,7 @@
+import sys
+print(sys.path[0])
+sys.path.append(sys.path[0] + '/../..')
+
 import socketserver
 import threading
 from time import sleep
@@ -5,7 +9,7 @@ from time import sleep
 from NetworkVersion.Server.protocal import Protocol
 
 from NetworkVersion.game_manager import GameManager
-from NetworkVersion.utils import Action
+from NetworkVersion.utils import Action, Player_State
 
 ADDRESS = ('127.0.0.1', 8712)  # 绑定地址
 
@@ -14,6 +18,7 @@ g_conn_pool = []  # 连接池
 ready_num = 0  # TODO: 记得清零
 gm = None
 
+LEAST_PLAYER_NUM = 4
 
 class Conn:
     def __init__(self, conn):
@@ -21,6 +26,173 @@ class Conn:
         self.name = None
         self.id = -1
         self.is_ready = False
+
+
+def init_client_players():
+    # gm刚建立时，要每个client初始化一个player_num大小的PlayerPublicInfo列表
+    # 还要告诉client他们自己的id是多少
+    player_num = len(g_conn_pool)
+    for r in g_conn_pool:
+        ret = Protocol()
+        ret.add_str("init_players")
+        ret.add_int32(player_num)
+        ret.add_int32(r.id)
+        r.conn.sendall(ret.get_pck_has_head())
+
+
+def refresh_player_public_info():
+    global gm
+    # TODO：把player的公开信息发送给client，每个client通过id判断哪个是自己
+    # TODO：可以优化成只更新指定pid的人的信息
+    ret = Protocol()
+    # 要发送的信息是一个列表[(pid, possess, cur_bet, current_state)]
+    ret.add_str("public_info")
+    num = len(g_conn_pool)
+    ret.add_int32(num)
+    for r in g_conn_pool:
+        pid = r.id
+        public_info = gm.get_public_info_by_pid(pid)
+        ret.add_int32(pid)
+        ret.add_int32(public_info[0])
+        ret.add_int32(public_info[1])
+        ret.add_int32(public_info[2].value)
+    for r in g_conn_pool:
+        r.conn.sendall(ret.get_pck_has_head())
+
+
+def refresh_player_private_info(pidx):
+    global gm
+    # TODO：向指定id的client发送私密信息（card）
+    for r in g_conn_pool:
+        if r.id == pidx:
+            ret = Protocol()
+            ret.add_str("private_info")
+            str_cards = " ".join(gm.get_player_card_by_pid(pidx))
+            ret.add_str(str_cards)
+            r.conn.sendall(ret.get_pck_has_head())
+            break
+
+
+def refresh_player_open_card():
+    global gm
+    ret = Protocol()
+    ret.add_str("open_card")
+    ret.add_int32(gm.env.current_left_player_num)
+    for r in g_conn_pool:
+        pid = r.id
+        if gm.players[pid].current_state != Player_State.FOLD:
+            ret.add_int32(pid)
+            ret.add_str(" ".join(gm.get_player_card_by_pid(pid)))
+    for r in g_conn_pool:
+        r.conn.sendall(ret.get_pck_has_head())
+
+
+def refresh_env_info():
+    global gm
+    # 向所有人发送env信息：公共牌、最大下注、大盲位置啥的
+    public_card, pool_possess, BB_id, current_max_bet, current_left_player_num = gm.get_env_info()
+    str_public_card = " ".join(public_card)
+    ret = Protocol()
+    ret.add_str("env_info")
+    ret.add_str(str_public_card)
+    ret.add_int32(pool_possess)
+    ret.add_int32(BB_id)
+    ret.add_int32(current_max_bet)
+    ret.add_int32(current_left_player_num)
+    for r in g_conn_pool:
+        r.conn.sendall(ret.get_pck_has_head())
+
+
+def game_start():
+    ret = Protocol()
+    ret.add_str("game_start")
+    for r in g_conn_pool:
+        r.conn.sendall(ret.get_pck_has_head())
+
+
+def game_over():
+    ret = Protocol()
+    ret.add_str("game_over")
+    # TODO 清理准备状态等 / print info
+    global ready_num
+    ready_num = 0
+    for r in g_conn_pool:
+        r.is_ready = False
+        r.conn.sendall(ret.get_pck_has_head())
+
+
+def play_a_game():
+    # 把GameManager的play_a_game移到这里来实现，方便穿插向client发消息，以及判断游戏状态
+    global gm
+    # 返回一局的赢家，-1表示人数不足了，游戏结束
+    # 开始前默认确定好大小盲位置，且场上玩家大于两位
+    if gm.alive_player_num < 2:
+        return -1
+    gm.poker.reset_card()
+
+    # TODO: 开局即allin
+    gm.init_env(gm.BB_pos, len(gm.alive_player_id))
+
+    # 下盲注
+    gm.env.pool_possess += gm.players[gm.alive_player_id[gm.BB_pos]].bet(2 * gm.base_chip)
+    gm.env.pool_possess += gm.players[gm.alive_player_id[gm.SB_pos]].bet(gm.base_chip)
+
+    # 更新玩家信息和环境信息
+    refresh_env_info()
+    refresh_player_public_info()
+
+    # 开始发两张底牌
+    for pidx in gm.alive_player_id:
+        gm.players[pidx].card += gm.poker.deal(2)
+        refresh_player_private_info(pidx)
+    gm.update_env()
+
+    # self.print_info(current_player_idx)
+    # 第一轮下注
+    if not gm.a_round_of_bet(g_conn_pool):
+        return
+
+    # 发三张公共牌
+    gm.env.public_cards += gm.poker.deal(3)
+    gm.update_env()
+    refresh_env_info()
+
+    # 第二轮下注
+    if not gm.a_round_of_bet(g_conn_pool):
+        return
+
+    # 发一张公共牌
+    gm.env.public_cards += gm.poker.deal(1)
+    gm.update_env()
+    refresh_env_info()
+
+    # 第三轮下注
+    if not gm.a_round_of_bet(g_conn_pool):
+        return
+
+    # 发一张公共牌
+    gm.env.public_cards += gm.poker.deal(1)
+    gm.update_env()
+    refresh_env_info()
+
+    # 最后一轮下注
+    if not gm.a_round_of_bet(g_conn_pool):
+        return
+
+    # 开牌比大小，分赃
+    refresh_player_open_card()
+    gm.compare_card()  # gm alive可能会变，BBpos会变
+    # 还可能下一局虽然人数够（3个），但是alive < 2了
+
+    # 更新玩家信息和环境信息
+    refresh_env_info()
+    refresh_player_public_info()
+
+
+def a_game_process():
+    game_start()
+    play_a_game()
+    game_over()
 
 
 class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
@@ -64,199 +236,45 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             if conn.conn == self.request:
                 return conn
 
-    def new_role(self):
-        # 告诉各个客户端有新玩家加入
-        ret = Protocol()
-        ret.add_str("newplayer")
-        ret.add_int32(self.get_conn().x)
-        ret.add_int32(self.get_conn().y)
-        ret.add_str(self.get_conn().name)
-        for r in g_conn_pool:
-            if r != self.get_conn():
-                r.conn.sendall(ret.get_pck_has_head())
-
-    def other_role(self):
-        # 告诉当前玩家，其他玩家的信息
-        for conn in g_conn_pool:
-            if conn != self.get_conn():
-                ret = Protocol()
-                ret.add_str("newplayer")
-                ret.add_int32(conn.x)
-                ret.add_int32(conn.y)
-                ret.add_str(conn.name)
-                self.request.sendall(ret.get_pck_has_head())
-
-    def move_role(self):
-        # 告诉各个客户端有玩家移动了
-        ret = Protocol()
-        ret.add_str("playermove")
-        ret.add_int32(self.get_conn().x)
-        ret.add_int32(self.get_conn().y)
-        ret.add_str(self.get_conn().name)
-        for r in g_conn_pool:
-            if r != self.get_conn():
-                r.conn.sendall(ret.get_pck_has_head())
-
-    def init_client_players(self):
-        # gm刚建立时，要每个client初始化一个player_num大小的PlayerPublicInfo列表
-        ret = Protocol()
-        ret.add_str("init_players")
-        player_num = len(g_conn_pool)
-        ret.add_int32(player_num)
-        for r in g_conn_pool:
-            r.conn.sendall(ret.get_pck_has_head())
-
-    def refresh_player_public_info(self):
-        global gm
-        # TODO：把player的公开信息发送给client，每个client通过id判断哪个是自己
-        # TODO：可以优化成只更新指定pid的人的信息
-        ret = Protocol()
-        # 要发送的信息是一个列表[(pid, possess, cur_bet, current_state)]
-        ret.add_str("public_info")
-        num = len(g_conn_pool)
-        ret.add_int32(num)
-        for r in g_conn_pool:
-            pid = r.id
-            public_info = gm.get_public_info_by_pid(pid)
-            ret.add_int32(pid)
-            ret.add_int32(public_info[0])
-            ret.add_int32(public_info[1])
-            ret.add_int32(public_info[2].value)
-        for r in g_conn_pool:
-            r.conn.sendall(ret.get_pck_has_head())
-
-    def refresh_player_private_info(self, pidx):
-        global gm
-        # TODO：向指定id的client发送私密信息（card）
-        for r in g_conn_pool:
-            if r.id == pidx:
-                ret = Protocol()
-                ret.add_str("private_info")
-                str_cards = " ".join(gm.get_player_card_by_pid(pidx))
-                ret.add_str(str_cards)
-                r.conn.sendall(ret.get_pck_has_head())
-                break
-
-    def refresh_env_info(self):
-        global gm
-        # 向所有人发送env信息：公共牌、最大下注、大盲位置啥的
-        public_card, pool_possess, BB_id, current_max_bet, current_left_player_num = gm.get_env_info()
-        str_public_card = " ".join(public_card)
-        ret = Protocol()
-        ret.add_str("env_info")
-        ret.add_str(str_public_card)
-        ret.add_int32(pool_possess)
-        ret.add_int32(BB_id)
-        ret.add_int32(current_max_bet)
-        ret.add_int32(current_left_player_num)
-        for r in g_conn_pool:
-            r.conn.sendall(ret.get_pck_has_head())
-
-    def ask_for_action(self):
-        # TODO: 向指定id的client索取action，超时则返回默认action（弃牌）。
-        # TODO: 应该重写utils中Player的take_action函数，输入action应该搬到client端的Player去
-        pass
-
-    def play_a_game(self):
-        # 把GameManager的play_a_game移到这里来实现，方便穿插向client发消息，以及判断游戏状态
-        global gm
-        gm = GameManager()  # TODO: 删除这一行
-        # 返回一局的赢家，-1表示人数不足了，游戏结束
-        # 开始前默认确定好大小盲位置，且场上玩家大于两位
-        if gm.alive_player_num < 2:
-            return -1
-        gm.poker.reset_card()
-
-        # TODO: 开局即allin
-        gm.init_env(gm.BB_pos, len(gm.alive_player_id))
-
-        # 下盲注
-        gm.env.pool_possess += gm.players[gm.alive_player_id[gm.BB_pos]].bet(2 * gm.base_chip)
-        gm.env.pool_possess += gm.players[gm.alive_player_id[gm.SB_pos]].bet(gm.base_chip)
-
-        # 更新玩家信息和环境信息
-        self.refresh_env_info()
-        self.refresh_player_public_info()
-
-        # 开始发两张底牌
-        for pidx in gm.alive_player_id:
-            gm.players[pidx].card += gm.poker.deal(2)
-            self.refresh_player_private_info(pidx)
-        gm.update_env()
-
-        # self.print_info(current_player_idx)
-        # 第一轮下注
-        if not gm.a_round_of_bet(g_conn_pool):
-            return
-
-        # 发三张公共牌
-        gm.env.public_cards += gm.poker.deal(3)
-        gm.update_env()
-        self.refresh_env_info()
-
-        # 第二轮下注
-        if not gm.a_round_of_bet(g_conn_pool):
-            return
-
-        # 发一张公共牌
-        gm.env.public_cards += gm.poker.deal(1)
-        gm.update_env()
-        self.refresh_env_info()
-
-        # 第三轮下注
-        if not gm.a_round_of_bet(g_conn_pool):
-            return
-
-        # 发一张公共牌
-        gm.env.public_cards += gm.poker.deal(1)
-        gm.update_env()
-        self.refresh_env_info()
-
-        # 最后一轮下注
-        if not gm.a_round_of_bet(g_conn_pool):
-            return
-
-        # 开牌比大小，分赃
-        gm.compare_card()
-
-        # 更新玩家信息和环境信息
-        self.refresh_env_info()
-        self.refresh_player_public_info()
-
     def pck_handler(self, pck):
         """
         解析数据包
         """
         p = Protocol(pck)
         pck_type = p.get_str()
+        print('getting package %s...' % pck_type)
+        global ready_num, gm
 
         if pck_type == 'register':
             self.get_conn().name = p.get_str()
 
-        elif pck_type == 'ready':
-            self.get_conn().is_ready = True  # TODO: 结束后要重置
-            global ready_num, gm
+        elif pck_type == 'ready' and not self.get_conn().is_ready:
+            self.get_conn().is_ready = True
             ready_num += 1
-            if len(g_conn_pool) >= 3 and len(g_conn_pool) == ready_num:
+            if len(g_conn_pool) >= LEAST_PLAYER_NUM and len(g_conn_pool) == ready_num:
                 # 最后一个按准备的人，对应的线程有点房主的意思
                 # 游戏开始
                 if gm is None:
                     # 如果是第一次开始游戏，先初始化牌桌的游戏管理器
                     gm = GameManager(player_num=ready_num)
-                    self.init_client_players()
                     # 为每个玩家分配id（按顺序就行）
                     for i, conn in enumerate(g_conn_pool):
                         conn.id = i
+                    init_client_players()
                 else:
                     # TODO: 如果前面已经玩过游戏了，开始第k局怎么办？要不要清理玩家，重置状态，检查在不在线，有新加入玩家啊什么的
                     pass
 
-                self.play_a_game()
+                # 不行，开始不了
+                game = threading.Thread(target=a_game_process)
+                game.daemon = True
+                game.start()
 
         elif pck_type == 'action':
-            pid = p.get_int32()
+            pid = self.get_conn().id
             action_type = p.get_int32()
             money = p.get_int32()
+            print('get_action: pid=%d, type=%d, money=%d'%(pid, action_type, money))
             no2action = {1: 'FOLD', 2: 'CHECK_OR_CALL', 3: 'CALL_AND_RAISE'}
             action = Action(no2action[action_type], money)
             # 设置gm的对应玩家采取的action

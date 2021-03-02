@@ -1,8 +1,13 @@
 import random
 import sys
+
+print(sys.path[0])
+sys.path.append(sys.path[0] + '/../..')
+
+import os
 import time
 from random import randint
-from threading import Thread
+from threading import Thread, Event
 
 import pygame
 import socket  # 导入 socket 模块
@@ -29,12 +34,13 @@ g_client = socket.socket()  # 创建 socket 对象
 
 env = LocalEnvInfo()
 
+game_waiting = Event()
+
 
 class Role:
     def __init__(self, name):
         self.id = -1
         self.name = name
-        self.card = []  # TODO: 记得每局结束后要清理
 
 
 class PlayerPublicInfo:
@@ -42,21 +48,30 @@ class PlayerPublicInfo:
         self.possess = 0
         self.cur_bet = 0
         self.current_state = Player_State.NORMAL
+        self.card = []  # TODO: 记得每局结束后要清理
 
 
-def send_role_move():
-    """
-    发送角色的坐标给服务端
-    """
-    # 构建数据包
-    p = Protocol()
-    p.add_str("move")
-    p.add_int32(g_player.x)
-    p.add_int32(g_player.y)
-    data = p.get_pck_has_head()
-    # 发送数据包
-    g_client.sendall(data)
+def print_info(clear=False):
+    if clear:
+        os.system("cls")
+    # TODO 打印玩家信息，环境信息。每次收到server的刷新都重新调用一下
+    # 应该在主线程（显示线程中）调用，但是有个问题就是消息处理线程在索要动作的时候会被input阻塞
+    print('大盲位id: ', env.BB_id, ' 剩余玩家数: ', env.current_left_player_num,
+          ' 底池: ', env.pool_possess, ' 当前最大下注: ', env.current_max_bet)
+    print('公共牌: ', env.public_cards)
 
+    print('|', 'name'.center(10), '|', 'id'.center(3), '|', 'state'.center(6),
+          '|', 'bet'.center(8), '|', 'possess'.center(8), '|', 'card'.center(10))
+    for pid in g_players.keys():
+        gp = g_players[pid]
+        if pid == g_role.id:
+            name = g_role.name
+            print('|', name.center(9), '*|', str(pid).center(3), '|', gp.current_state.name.center(6),
+                  '|', str(gp.cur_bet).center(8), '|', str(gp.possess).center(8), '|', gp.card)
+        else:
+            name = '---'
+            print('|', name.center(10), '|', str(pid).center(3), '|', gp.current_state.name.center(6),
+                  '|', str(gp.cur_bet).center(8), '|', str(gp.possess).center(8), '|', gp.card)
 
 def register():
     """
@@ -90,12 +105,12 @@ def send_action(action_type, money):
     # 构建数据包
     p = Protocol()
     p.add_str("action")
-    p.add_int32(g_role.id)
     p.add_int32(action_type)
     p.add_int32(money)
     data = p.get_pck_has_head()
     # 发送数据包
     g_client.sendall(data)
+    print("id: %d sent action" % g_role.id)
 
 
 def pck_handler(pck):
@@ -103,8 +118,14 @@ def pck_handler(pck):
     p = Protocol(pck)
     pck_type = p.get_str()
 
-    if pck_type == 'init_players':  # 玩家移动的数据包
+    if pck_type == 'game_start':
+        print('*' * 10 + 'Game Start!' + '*' * 10)
+        for k in g_players.keys():
+            g_players[k].card = []
+        game_waiting.clear()
+    elif pck_type == 'init_players':  # 玩家移动的数据包
         player_num = p.get_int32()
+        g_role.id = p.get_int32()
         g_players = {i: PlayerPublicInfo() for i in range(player_num)}
     elif pck_type == 'public_info':  # 新玩家数据包
         player_num = p.get_int32()
@@ -116,13 +137,19 @@ def pck_handler(pck):
             g_players[pid].possess = possess
             g_players[pid].cur_bet = cur_bet
             g_players[pid].current_state = Player_State(current_state_value)
+        print_info(True)
+
     elif pck_type == 'private_info':
         str_cards = p.get_str()
-        g_role.card = str_cards.split(' ')
+        g_players[g_role.id].card = str_cards.split(' ')
+        print_info(True)
+
     elif pck_type == 'env_info':
         str_public_cards = p.get_str()
         public_cards = str_public_cards.split(' ')
         env.update(public_cards, p.get_int32(), p.get_int32(), p.get_int32(), p.get_int32())
+        print_info(True)
+
     elif pck_type == 'ask_for_action':
         a = input('玩家请采取动作（1弃牌，2check或call，3加注 加注金额）: ')
         a = a.strip(' ').split(' ')
@@ -137,6 +164,19 @@ def pck_handler(pck):
             if len(a) > 1 and a[1].isdigit():
                 money = int(a[1])
         send_action(int(a[0]), money)
+
+    elif pck_type == 'open_card':
+        num = p.get_int32()
+        for i in range(num):
+            pid = p.get_int32()
+            str_cards = p.get_str()
+            g_players[pid].card = str_cards.split(' ')
+        print_info(True)
+
+    elif pck_type == 'game_over':
+        print('*' * 10 + 'Game Start!' + '*' * 10)
+        game_waiting.set()
+
     elif pck_type == 'logout':  # 玩家掉线
         # name = p.get_str()
         # for r in g_other_player:
@@ -250,18 +290,29 @@ def main_loop():
     """
     游戏主循环
     """
+    game_waiting.set()
     while True:
         # FPS=60
         # pygame.time.delay(32)
         # 逻辑更新
-        update_logic()
+        # update_logic()
         # 视图更新
-        update_view()
-
-
+        # update_view()
+        if game_waiting.is_set():
+            # 游戏没开始，输入命令来准备、退出之类的
+            instr = input('输入命令：')
+            if instr == 'q':
+                sys.exit()
+            elif instr == '9':
+                # 准备开始游戏，应该在开始游戏的时候clear掉
+                send_get_ready()
+        else:
+            # 游戏正在运行中，把控制权转移给另一个线程
+            game_waiting.wait()  # 等待set为止，也就是在游戏结束的时候set
+        
+        
 if __name__ == '__main__':
     # 初始化
     init_game()
     # 游戏循环
     main_loop()
-

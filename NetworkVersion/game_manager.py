@@ -13,7 +13,6 @@ class GameManager:
         self.alive_player_num = player_num
         self.poker = Poker()
         self.base_chip = base_chip
-        self.is_running = False
 
         self.player_actions = [Action("FOLD") for i in range(player_num)]
         self.player_action_flag = [False for i in range(player_num)]
@@ -49,6 +48,9 @@ class GameManager:
     def _next_bet_available_idx(self, i):
         ni = self._next_idx(i)
         while self.players[self.alive_player_id[ni]].current_state != Player_State.NORMAL:
+            if ni == i:
+                # 转了一圈了，没有下一个了，一般到这里的话这个i还就allin了
+                return ni
             ni = self._next_idx(ni)
         return ni
 
@@ -58,6 +60,9 @@ class GameManager:
     def _prev_bet_available_idx(self, i):
         pi = self._prev_idx(i)
         while self.players[self.alive_player_id[pi]].current_state != Player_State.NORMAL:
+            if pi == i:
+                # 转了一圈了，没有下一个了，一般到这里的话这个i还就allin了
+                return pi
             pi = self._prev_idx(pi)
         return pi
 
@@ -107,6 +112,39 @@ class GameManager:
         self.BB_pos = new_alive_player_id.index(next_BB_pidx)
         self.SB_pos = (self.BB_pos - 1 + self.alive_player_num) % self.alive_player_num
 
+    def refresh_player_public_info(self, g_conn_pool):
+        # 把player的公开信息发送给client，每个client通过id判断哪个是自己
+        # TODO: 可以优化成只更新指定pid的人的信息
+        ret = Protocol()
+        # 要发送的信息是一个列表[(pid, possess, cur_bet, current_state)]
+        ret.add_str("public_info")
+        num = len(g_conn_pool)
+        ret.add_int32(num)
+        for r in g_conn_pool:
+            pid = r.id
+            public_info = self.get_public_info_by_pid(pid)
+            ret.add_int32(pid)
+            ret.add_int32(public_info[0])
+            ret.add_int32(public_info[1])
+            ret.add_int32(public_info[2].value)
+        for r in g_conn_pool:
+            r.conn.sendall(ret.get_pck_has_head())
+
+    def refresh_env_info(self, g_conn_pool):
+        # 向所有人发送env信息：公共牌、最大下注、大盲位置啥的
+        public_card, pool_possess, BB_id, current_max_bet, \
+        current_left_player_num = self.get_env_info()
+        str_public_card = " ".join(public_card)
+        ret = Protocol()
+        ret.add_str("env_info")
+        ret.add_str(str_public_card)
+        ret.add_int32(pool_possess)
+        ret.add_int32(BB_id)
+        ret.add_int32(current_max_bet)
+        ret.add_int32(current_left_player_num)
+        for r in g_conn_pool:
+            r.conn.sendall(ret.get_pck_has_head())
+
     def process_action(self, idx, eidx, g_conn_pool):
         pid = self.alive_player_id[idx]
         cur_player = self.players[pid]
@@ -121,6 +159,7 @@ class GameManager:
         ret = Protocol()
         ret.add_str("ask_for_action")
         g_conn_pool[pid].conn.sendall(ret.get_pck_has_head())
+        print('ask %d for action' % pid)
         # 等待返回gm用一个数组flag来记录
         timeout = 0  # 等待玩家40秒
         while not self.player_action_flag[pid] and timeout < 80:
@@ -161,24 +200,28 @@ class GameManager:
         idx = self._next_bet_available_idx(idx)
 
         self.update_env()
-        # TODO: 调用refresh_player_public_info和refresh_env_info
+        # 调用refresh_player_public_info和refresh_env_info
+        self.refresh_player_public_info(g_conn_pool)
+        self.refresh_env_info(g_conn_pool)
         return idx, eidx, FLUSH_FLAG
 
     def a_round_of_bet(self, g_conn_pool):
         idx = self._next_bet_available_idx(self.BB_pos)  # 大盲下家能加注（除去弃牌和allin的人）开始操作
         eidx = self._prev_bet_available_idx(idx)  # 第一家操作的人的上一个能加注的人最后操作
-        # 按顺序轮询这些玩家的操作，一旦有玩家的操作使得本局最大加注筹码发生改变，则刷新eidx为该玩家的上一家
-        while True:
-            while idx != eidx:
-                idx, eidx, _ = self.process_action(idx, eidx, g_conn_pool)
+        if idx != eidx:
+            # idx==eidx: 没人能加注了（都allin了或者只剩一个了，加不加都无所谓了）
+            # 按顺序轮询这些玩家的操作，一旦有玩家的操作使得本局最大加注筹码发生改变，则刷新eidx为该玩家的上一家
+            while True:
+                while idx != eidx:
+                    idx, eidx, _ = self.process_action(idx, eidx, g_conn_pool)
 
-            if self.env.current_left_player_num == 1:
-                break
-            # 最后一个玩家的操作，若刷新，则继续，否则，break结束本轮加注
-            idx, eidx, last_bet_more = self.process_action(idx, eidx, g_conn_pool)
-            if not last_bet_more:
-                # 本轮加注结束
-                break
+                if self.env.current_left_player_num == 1:
+                    break
+                # 最后一个玩家的操作，若刷新，则继续，否则，break结束本轮加注
+                idx, eidx, last_bet_more = self.process_action(idx, eidx, g_conn_pool)
+                if not last_bet_more:
+                    # 本轮加注结束
+                    break
         return self.check_match_state()
 
     # 比牌和分赃，要考虑有人ALL-IN吃不下所有，以及牌一样大平分的情况
