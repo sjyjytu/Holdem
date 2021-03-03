@@ -248,13 +248,16 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         """
         p = Protocol(pck)
         pck_type = p.get_str()
-        print('getting package %s...' % pck_type)
+        # print('getting package %s...' % pck_type)
         global ready_num, gm
 
         if pck_type == 'register':
-            self.get_conn().name = p.get_str()
+            name = p.get_str()
+            self.get_conn().name = name
+            print(name, ' register')
 
         elif pck_type == 'ready' and not self.get_conn().is_ready:
+            print(self.get_conn().name, ' get ready')
             self.get_conn().is_ready = True
             ready_num += 1
             if len(g_conn_pool) >= LEAST_PLAYER_NUM and len(g_conn_pool) == ready_num:
@@ -280,7 +283,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             pid = self.get_conn().id
             action_type = p.get_int32()
             money = p.get_int32()
-            print('get_action: pid=%d, type=%d, money=%d'%(pid, action_type, money))
+            # print('get_action: pid=%d, type=%d, money=%d'%(pid, action_type, money))
             no2action = {1: 'FOLD', 2: 'CHECK_OR_CALL', 3: 'CALL_AND_RAISE'}
             action = Action(no2action[action_type], money)
             # 设置gm的对应玩家采取的action

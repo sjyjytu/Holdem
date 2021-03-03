@@ -93,3 +93,5 @@
 l = ['黑桃1', '方片10']
 print('dd ', str(l).center(10), ' aa')
 print('dd ', str(l).ljust(10), ' aa')
+
+print(len('1234'), '-2133'.isdigit())

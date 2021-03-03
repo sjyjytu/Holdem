@@ -1,12 +1,9 @@
-import random
 import sys
 
 print(sys.path[0])
 sys.path.append(sys.path[0] + '/../..')
 
 import os
-import time
-from random import randint
 from threading import Thread, Event
 
 # import pygame
