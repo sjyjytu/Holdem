@@ -29,7 +29,7 @@ Chosen_Card_Info = collections.namedtuple('Chosen_Card_Info', ['best_card_type',
 
 
 class Player:
-    def __init__(self, init_possess=100000, id=0, policy=None):
+    def __init__(self, init_possess=10000, id=0, policy=None):
         self.possess = init_possess
         self.current_bet = 0
         self.policy = policy

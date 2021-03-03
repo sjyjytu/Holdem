@@ -16,8 +16,6 @@ from NetworkVersion.Client.protocal import Protocol
 
 from NetworkVersion.utils import *
 
-# ADDRESS = ('127.0.0.1', 8712)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
-ADDRESS = ('8.133.165.59', 23456)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
 # WIDTH, HEIGHT = 640, 480  # 窗口大小
 #
 # g_font = None
@@ -54,7 +52,7 @@ class PlayerPublicInfo:
 
 def print_info(clear=False):
     if clear:
-        os.system("cls")
+        os.system("cls")  # 如果你用的是mac，把这行改为os.system("clear")
     # TODO 打印玩家信息，环境信息。每次收到server的刷新都重新调用一下
     # 应该在主线程（显示线程中）调用，但是有个问题就是消息处理线程在索要动作的时候会被input阻塞
     print('大盲位id: ', env.BB_id, ' 剩余玩家数: ', env.current_left_player_num,
@@ -318,6 +316,13 @@ def main_loop():
         
         
 if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', '-p', type=int, default=23456, help='端口号')
+    args = parser.parse_args()
+    port = args.port
+    ADDRESS = ('8.133.165.59', 23457)  # 如果服务端在本机，请使用('127.0.0.1', 8712)
     # 初始化
     init_game()
     # 游戏循环

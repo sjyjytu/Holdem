@@ -5,10 +5,10 @@ import time
 
 
 class GameManager:
-    def __init__(self, player_num=6, base_chip=10):
+    def __init__(self, player_num=6, init_possess=10000, base_chip=10):
         self.env = None
         self.player_num = player_num
-        self.players = [Player(id=i) for i in range(player_num)]
+        self.players = [Player(init_possess, id=i) for i in range(player_num)]
         self.alive_player_id = list(range(player_num))  # 筹码没输光的玩家
         self.alive_player_num = player_num
         self.poker = Poker()

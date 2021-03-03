@@ -266,9 +266,10 @@ class GameManager:
         self.compare_card()
 
 
-gm = GameManager(player_num=4)
-gm.play_a_game()
-gm.print_info()
+if __name__ == "__main__":
+    gm = GameManager(player_num=4)
+    gm.play_a_game()
+    gm.print_info()
 
 
 

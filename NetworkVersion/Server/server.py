@@ -11,15 +11,15 @@ from NetworkVersion.Server.protocal import Protocol
 from NetworkVersion.game_manager import GameManager
 from NetworkVersion.utils import Action, Player_State
 
-# ADDRESS = ('127.0.0.1', 8712)  # 绑定地址
-ADDRESS = ('0.0.0.0', 23456)  # 绑定地址
-
 g_conn_pool = []  # 连接池
 
 ready_num = 0  # TODO: 记得清零
 gm = None
 
 LEAST_PLAYER_NUM = 2
+INIT_POSSESS = 10000
+BASE_CHIP = 100
+
 
 class Conn:
     def __init__(self, conn):
@@ -259,7 +259,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
                 # 游戏开始
                 if gm is None:
                     # 如果是第一次开始游戏，先初始化牌桌的游戏管理器
-                    gm = GameManager(player_num=ready_num)
+                    gm = GameManager(player_num=ready_num, init_possess=INIT_POSSESS, base_chip=BASE_CHIP)
                     # 为每个玩家分配id（按顺序就行）
                     for i, conn in enumerate(g_conn_pool):
                         conn.id = i
@@ -301,24 +301,35 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', '-p', type=int, default=23456, help='端口号')
+    parser.add_argument('--init_chip', '-ic', type=int, default=10000, help='初始筹码')
+    parser.add_argument('--base_chip', '-bc', type=int, default=100, help='最低下注筹码')
+    args = parser.parse_args()
+    port = args.port
+    INIT_POSSESS = args.init_chip
+    BASE_CHIP = args.base_chip
+    # ADDRESS = ('0.0.0.0', port)  # 绑定地址
+    ADDRESS = ('127.0.0.1', port)  # 绑定地址
     server = ThreadedTCPServer(ADDRESS, ThreadedTCPRequestHandler)
     # 新开一个线程运行服务端
     server_thread = threading.Thread(target=server.serve_forever)
-    server_thread.daemon = True
+    server_thread.daemon = False
     server_thread.start()
 
     # 主线程逻辑
     while True:
         sleep(3)
 # linux下后台运行不能使用input
-#         cmd = input("""--------------------------
+        cmd = input("""--------------------------
 # 输入1:查看当前在线人数
 # 输入2:关闭服务端
 # """)
-#         if cmd == '1':
-#             print("--------------------------")
-#             print("当前在线人数：", len(g_conn_pool))
-#         elif cmd == '2':
-#             server.shutdown()
-#             server.server_close()
-#             exit()
+        if cmd == '1':
+            print("--------------------------")
+            print("当前在线人数：", len(g_conn_pool))
+        elif cmd == '2':
+            server.shutdown()
+            server.server_close()
+            exit()

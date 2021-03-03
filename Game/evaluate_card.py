@@ -40,7 +40,7 @@ def is_seq(h):
     h = sorted(h, reverse=True)
     ref = True
     for x in range(len(h)-1):
-        if not h[x]+1 == h[x+1]:
+        if not h[x]-1 == h[x+1]:
             ref = False
             break
     if ref:
