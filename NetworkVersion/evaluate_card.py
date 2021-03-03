@@ -129,41 +129,51 @@ def get_high(h):
 def evaluate_hand(h):
     flag, comp = is_royal(h)
     if flag:
-        return "ROYAL FLUSH", comp, 10
+        # return "ROYAL FLUSH", comp, 10
+        return "皇家同花顺", comp, 10
 
     flag, comp = is_straight_flush(h)
     if flag:
-        return "STRAIGHT FLUSH", comp, 9
+        # return "STRAIGHT FLUSH", comp, 9
+        return "同花顺", comp, 9
 
     flag, comp = is_fourofakind(h)
     if flag:
-        return "FOUR OF A KIND", comp, 8
+        # return "FOUR OF A KIND", comp, 8
+        return "四条", comp, 8
 
     flag, comp = is_fullhouse(h)
     if flag:
-        return "FULL HOUSE", comp, 7
+        # return "FULL HOUSE", comp, 7
+        return "葫芦", comp, 7
 
     flag, comp = is_flush(h)
     if flag:
-        return "FLUSH", comp, 6
+        # return "FLUSH", comp, 6
+        return "同花", comp, 6
 
     flag, comp = is_seq(h)
     if flag:
-        return "STRAIGHT", comp, 5
+        # return "STRAIGHT", comp, 5
+        return "顺子", comp, 5
 
     flag, comp = is_threeofakind(h)
     if flag:
-        return "THREE OF A KIND", comp, 4
+        # return "THREE OF A KIND", comp, 4
+        return "三条", comp, 4
 
     flag, comp = is_twopair(h)
     if flag:
-        return "TWO PAIR", comp, 3
+        # return "TWO PAIR", comp, 3
+        return "两对", comp, 3
 
     flag, comp = is_pair(h)
     if flag:
-        return "PAIR", comp, 2
+        # return "PAIR", comp, 2
+        return "一对", comp, 2
 
-    return "HIGH CARD", get_high(h), 1
+    # return "HIGH CARD", get_high(h), 1
+    return "高牌", get_high(h), 1
 
 
 # given a hand of 5 cards, this function evaluates two hands and also deals with ties and edge cases

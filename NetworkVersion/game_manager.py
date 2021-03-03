@@ -156,9 +156,15 @@ class GameManager:
 
         # 向对应player索要action
         self.player_action_flag[pid] = False  # 先重置，尽量减少延迟带来的bug
+
+        # 改成向所有玩家都发，以告知现在到谁
         ret = Protocol()
         ret.add_str("ask_for_action")
-        g_conn_pool[pid].conn.sendall(ret.get_pck_has_head())
+        ret.add_int32(pid)
+        for r in g_conn_pool:
+            r.conn.sendall(ret.get_pck_has_head())
+        # g_conn_pool[pid].conn.sendall(ret.get_pck_has_head())
+
         print('ask %d for action' % pid)
         # 等待返回gm用一个数组flag来记录
         timeout = 0  # 等待玩家40秒
@@ -289,8 +295,6 @@ class GameManager:
             for pidx in cur_best_card_keepers:
                 self.players[pidx].possess += per_player_award
 
-        self.end_match()
-
     def play_a_game(self):
         # 返回一局的赢家，-1表示人数不足了，游戏结束
         # 开始前默认确定好大小盲位置，且场上玩家大于两位
@@ -344,6 +348,7 @@ class GameManager:
 
         # 开牌比大小，分赃
         self.compare_card()
+        self.end_match()
 
 
 if __name__ == '__main__':

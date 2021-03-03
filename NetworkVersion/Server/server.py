@@ -86,6 +86,8 @@ def refresh_player_open_card():
         if gm.players[pid].current_state != Player_State.FOLD:
             ret.add_int32(pid)
             ret.add_str(" ".join(gm.get_player_card_by_pid(pid)))
+            ret.add_str(gm.players[pid].current_chosen_card_info.best_card_type +
+                        ' '+' '.join([card.rank for card in gm.players[pid].current_chosen_card_info.best_card]))
     for r in g_conn_pool:
         r.conn.sendall(ret.get_pck_has_head())
 
@@ -183,8 +185,9 @@ def play_a_game():
         return
 
     # 开牌比大小，分赃
-    refresh_player_open_card()
     gm.compare_card()  # gm alive可能会变，BBpos会变
+    refresh_player_open_card()
+    gm.end_match()
     # 还可能下一局虽然人数够（3个），但是alive < 2了
 
     # 更新玩家信息和环境信息
@@ -306,10 +309,12 @@ if __name__ == '__main__':
     parser.add_argument('--port', '-p', type=int, default=23456, help='端口号')
     parser.add_argument('--init_chip', '-ic', type=int, default=10000, help='初始筹码')
     parser.add_argument('--base_chip', '-bc', type=int, default=100, help='最低下注筹码')
+    parser.add_argument('--least_player_num', '-lpn', type=int, default=2, help='至少玩家数')
     args = parser.parse_args()
     port = args.port
     INIT_POSSESS = args.init_chip
     BASE_CHIP = args.base_chip
+    LEAST_PLAYER_NUM = args.least_player_num
     # ADDRESS = ('0.0.0.0', port)  # 绑定地址
     ADDRESS = ('127.0.0.1', port)  # 绑定地址
     server = ThreadedTCPServer(ADDRESS, ThreadedTCPRequestHandler)
