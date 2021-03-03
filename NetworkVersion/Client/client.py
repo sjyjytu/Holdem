@@ -255,8 +255,8 @@ if __name__ == '__main__':
     parser.add_argument('--port', '-p', type=int, default=23456, help='端口号')
     args = parser.parse_args()
     port = args.port
-    # ADDRESS = ('8.133.165.59', port)  # 如果服务端在本机，请使用('127.0.0.1', port)
-    ADDRESS = ('127.0.0.1', port)
+    ADDRESS = ('8.133.165.59', port)  # 如果服务端在本机，请使用('127.0.0.1', port)
+    # ADDRESS = ('127.0.0.1', port)
     # 初始化
     init_game()
     # 游戏循环
