@@ -13,14 +13,6 @@ from NetworkVersion.Client.protocal import Protocol
 
 from NetworkVersion.utils import *
 
-# WIDTH, HEIGHT = 640, 480  # 窗口大小
-#
-# g_font = None
-#
-# g_screen = None  # 窗口的surface
-#
-# g_sur_role = None  # 人物的role
-
 g_role = None  # 玩家操作的角色
 
 g_players = {}  # 所有玩家
@@ -55,7 +47,8 @@ def print_info(clear=False):
     # 应该在主线程（显示线程中）调用，但是有个问题就是消息处理线程在索要动作的时候会被input阻塞
     print('大盲位id: ', env.BB_id, ' 剩余玩家数: ', env.current_left_player_num,
           ' 底池: ', env.pool_possess, ' 当前最大下注: ', env.current_max_bet)
-    print('公共牌: ', env.public_cards)
+    print('公共牌: ')
+    print_card_small(env.public_cards)
 
     print('|', 'name'.center(10), '|', 'id'.center(3), '|', 'state'.center(6),
           '|', 'bet'.center(8), '|', 'possess'.center(8), '|', 'card'.center(10))
@@ -219,25 +212,7 @@ def init_game():
     """
     初始化游戏
     """
-    # global g_screen, g_sur_role, g_player, g_font
     global g_role, g_players
-    # # 初始化pygame
-    # pygame.init()
-    # pygame.display.set_caption('网络游戏Demo')
-    # g_screen = pygame.display.set_mode([WIDTH, HEIGHT])
-    # g_sur_role = pygame.image.load("./role.png").convert_alpha()  # 人物图片
-    # g_font = pygame.font.SysFont("fangsong", 24)
-    # # 初始化随机种子
-    # random.seed(int(time.time()))
-    # 创建角色
-    # 随机生成一个名字
-    # last_name = ['赵', '钱', '孙', '李', '周', '吴', '郑', '王', '冯', '陈', '褚', '卫',
-    #              '蒋', '沈', '韩', '杨', '朱', '秦', '尤', '许', '何', '吕', '施', '张',
-    #              '孔', '曹', '严', '华', '金', '魏', '陶', '姜', '戚', '谢', '邹', '喻', ]
-    # first_name = ['梦琪', '忆柳', '之桃', '慕青', '问兰', '尔岚', '元香', '初夏', '沛菡',
-    #               '傲珊', '曼文', '乐菱', '痴珊', '孤风', '雅彤', '宛筠', '飞松', '初瑶',
-    #               '夜云', '乐珍']
-    # name = random.choice(last_name) + random.choice(first_name)
     name = input('输入你的昵称：')[:9]
     g_role = Role(name)
 
@@ -251,61 +226,11 @@ def init_game():
     register()
 
 
-def handler_event():
-    pass
-    # 事件处理
-    # for event in pygame.event.get():
-    #     if event.type == pygame.QUIT:
-    #         sys.exit()
-    #     elif event.type == pygame.KEYDOWN:
-    #         if event.key == pygame.K_9:
-    #             send_get_ready()
-            # elif event.key == pygame.K_s:
-            #     g_player.y += 5
-            # elif event.key == pygame.K_a:
-            #     g_player.x -= 5
-            # elif event.key == pygame.K_d:
-            #     g_player.x += 5
-            # send_role_move()  # 告诉服务器，自己移动了
-
-
-def update_logic():
-    """
-    逻辑更新
-    """
-    # 事件处理
-    handler_event()
-
-
-def update_view():
-    """
-    视图更新
-    """
-    # g_screen.fill((0, 0, 0))
-    # # 画角色
-    # g_screen.blit(g_player.sur_name, (g_player.x, g_player.y - 20))
-    # g_screen.blit(g_sur_role, (g_player.x, g_player.y))
-    # # 画其他角色
-    # for r in g_other_player:
-    #     g_screen.blit(r.sur_name, (r.x, r.y - 20))
-    #     g_screen.blit(g_sur_role, (r.x, r.y))
-    # # 刷新
-    # pygame.display.flip()
-    pass
-
-
 def main_loop():
     """
     游戏主循环
     """
     while True:
-        # FPS=60
-        # pygame.time.delay(32)
-        # 逻辑更新
-        # update_logic()
-        # 视图更新
-        # update_view()
-
         # 游戏没开始，输入命令来准备、退出之类的
         instr = input('输入命令（r准备，q退出）：')
         while instr not in ['q', 'r']:

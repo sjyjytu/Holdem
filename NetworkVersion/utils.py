@@ -126,4 +126,41 @@ class LocalEnvInfo:
         self.current_left_player_num = clpn
 
 
+def print_card_small(cards):
+    ''' Nicely print a card or list of cards
+    Args:
+        cards: list of string such as ['♠A', '♥10']
+    '''
+    if cards is None:
+        cards = [None]
+    if isinstance(cards, str):
+        cards = [cards]
+
+    lines = [[] for _ in range(5)]
+
+    for card in cards:
+        if card is None or card == '':
+            lines[0].append('┌───────┐')
+            lines[1].append('│░░░░░░░│')
+            lines[2].append('│░░░░░░░│')
+            lines[3].append('│░░░░░░░│')
+            lines[4].append('└───────┘')
+        else:
+            suit = card[0]
+            rank = card[1]
+            if len(card) == 3:
+                space = card[2]
+            else:
+                space = ' '
+
+            lines[0].append('┌───────┐')
+            lines[1].append('│{}{}     │'.format(rank, space))
+            lines[2].append('│   {}   │'.format(suit))
+            lines[3].append('│     {}{}│'.format(space, rank))
+            lines[4].append('└───────┘')
+
+    for line in lines:
+        print('   '.join(line))
+
+
 

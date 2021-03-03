@@ -25,11 +25,11 @@ class GameManager:
         return self.players[pid].possess, self.players[pid].current_bet, self.players[pid].current_state
 
     def get_player_card_by_pid(self, pid):
-        suit2word = {'spades': '黑桃', 'hearts': '红心', 'clubs': '梅花', 'diamonds': '方片'}
+        suit2word = {'spades': '♠', 'hearts': '♥', 'clubs': '♣', 'diamonds': '♦'}
         return [suit2word[card.suit] + card.rank for card in self.players[pid].card]
 
     def get_env_info(self):
-        suit2word = {'spades': '黑桃', 'hearts': '红心', 'clubs': '梅花', 'diamonds': '方片'}
+        suit2word = {'spades': '♠', 'hearts': '♥', 'clubs': '♣', 'diamonds': '♦'}
         public_card = [suit2word[card.suit] + card.rank for card in self.env.public_cards]
         pool_possess, BB_id, current_max_bet, current_left_player_num \
             = self.env.pool_possess, self.alive_player_id[self.BB_pos], \
@@ -68,7 +68,7 @@ class GameManager:
 
     def print_info(self):
         print()
-        suit2word = {'spades': '黑桃', 'hearts': '红心', 'clubs': '梅花', 'diamonds': '方片'}
+        suit2word = {'spades': '♠', 'hearts': '♥', 'clubs': '♣', 'diamonds': '♦'}
         print('公共牌：', [suit2word[card.suit] + card.rank for card in self.env.public_cards])
         print('大盲位置：', self.alive_player_id[self.BB_pos])
         for pid in self.alive_player_id:

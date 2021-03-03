@@ -90,8 +90,108 @@
 # car1 = threading.Thread(target=car, args=("奔驰",))
 # car1.start()
 
-l = ['黑桃1', '方片10']
-print('dd ', str(l).center(10), ' aa')
-print('dd ', str(l).ljust(10), ' aa')
+# l = ['黑桃1', '方片10']
+# print('dd ', str(l).center(10), ' aa')
+# print('dd ', str(l).ljust(10), ' aa')
+#
+# print(len('1234'), '-2133'.isdigit())
+def elegant_form(card):
+    ''' Get a elegent form of a card string
+    Args:
+        card (string): A card string
+    Returns:
+        elegent_card (string): A nice form of card
+    '''
+    suits = {'S': '♠', 'H': '♥', 'D': '♦', 'C': '♣','s': '♠', 'h': '♥', 'd': '♦', 'c': '♣' }
+    rank = '10' if card[1] == 'T' else card[1]
 
-print(len('1234'), '-2133'.isdigit())
+    return suits[card[0]] + rank
+
+
+def print_card(cards):
+    ''' Nicely print a card or list of cards
+    Args:
+        card (string or list): The card(s) to be printed
+    '''
+    if cards is None:
+        cards = [None]
+    if isinstance(cards, str):
+        cards = [cards]
+
+    lines = [[] for _ in range(9)]
+
+    for card in cards:
+        if card is None:
+            lines[0].append('┌─────────┐')
+            lines[1].append('│░░░░░░░░░│')
+            lines[2].append('│░░░░░░░░░│')
+            lines[3].append('│░░░░░░░░░│')
+            lines[4].append('│░░░░░░░░░│')
+            lines[5].append('│░░░░░░░░░│')
+            lines[6].append('│░░░░░░░░░│')
+            lines[7].append('│░░░░░░░░░│')
+            lines[8].append('└─────────┘')
+        else:
+            elegant_card = elegant_form(card)
+            suit = elegant_card[0]
+            rank = elegant_card[1]
+            if len(elegant_card) == 3:
+                space = elegant_card[2]
+            else:
+                space = ' '
+
+            lines[0].append('┌─────────┐')
+            lines[1].append('│{}{}       │'.format(rank, space))
+            lines[2].append('│         │')
+            lines[3].append('│         │')
+            lines[4].append('│    {}    │'.format(suit))
+            lines[5].append('│         │')
+            lines[6].append('│         │')
+            lines[7].append('│       {}{}│'.format(space, rank))
+            lines[8].append('└─────────┘')
+
+    for line in lines:
+        print('   '.join(line))
+
+
+def print_card_small(cards):
+    ''' Nicely print a card or list of cards
+    Args:
+        card (string or list): The card(s) to be printed
+    '''
+    if cards is None:
+        cards = [None]
+    if isinstance(cards, str):
+        cards = [cards]
+
+    lines = [[] for _ in range(5)]
+
+    for card in cards:
+        if card is None:
+            lines[0].append('┌───────┐')
+            lines[1].append('│░░░░░░░│')
+            lines[2].append('│░░░░░░░│')
+            lines[3].append('│░░░░░░░│')
+            lines[4].append('└───────┘')
+        else:
+            elegant_card = elegant_form(card)
+            suit = elegant_card[0]
+            rank = elegant_card[1]
+            if len(elegant_card) == 3:
+                space = elegant_card[2]
+            else:
+                space = ' '
+
+            lines[0].append('┌───────┐')
+            lines[1].append('│{}{}     │'.format(rank, space))
+            lines[2].append('│   {}   │'.format(suit))
+            lines[3].append('│     {}{}│'.format(space, rank))
+            lines[4].append('└───────┘')
+
+    for line in lines:
+        print('   '.join(line))
+
+
+# print_card_small([('s','10'), ('h', 'A'), None])
+print(' '.join([]).split(' '))
+print(''.split(' '))
