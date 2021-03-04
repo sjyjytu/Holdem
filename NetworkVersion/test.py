@@ -95,103 +95,124 @@
 # print('dd ', str(l).ljust(10), ' aa')
 #
 # print(len('1234'), '-2133'.isdigit())
-def elegant_form(card):
-    ''' Get a elegent form of a card string
-    Args:
-        card (string): A card string
-    Returns:
-        elegent_card (string): A nice form of card
-    '''
-    suits = {'S': '♠', 'H': '♥', 'D': '♦', 'C': '♣','s': '♠', 'h': '♥', 'd': '♦', 'c': '♣' }
-    rank = '10' if card[1] == 'T' else card[1]
+# def elegant_form(card):
+#     ''' Get a elegent form of a card string
+#     Args:
+#         card (string): A card string
+#     Returns:
+#         elegent_card (string): A nice form of card
+#     '''
+#     suits = {'S': '♠', 'H': '♥', 'D': '♦', 'C': '♣','s': '♠', 'h': '♥', 'd': '♦', 'c': '♣' }
+#     rank = '10' if card[1] == 'T' else card[1]
+#
+#     return suits[card[0]] + rank
+#
+#
+# def print_card(cards):
+#     ''' Nicely print a card or list of cards
+#     Args:
+#         card (string or list): The card(s) to be printed
+#     '''
+#     if cards is None:
+#         cards = [None]
+#     if isinstance(cards, str):
+#         cards = [cards]
+#
+#     lines = [[] for _ in range(9)]
+#
+#     for card in cards:
+#         if card is None:
+#             lines[0].append('┌─────────┐')
+#             lines[1].append('│░░░░░░░░░│')
+#             lines[2].append('│░░░░░░░░░│')
+#             lines[3].append('│░░░░░░░░░│')
+#             lines[4].append('│░░░░░░░░░│')
+#             lines[5].append('│░░░░░░░░░│')
+#             lines[6].append('│░░░░░░░░░│')
+#             lines[7].append('│░░░░░░░░░│')
+#             lines[8].append('└─────────┘')
+#         else:
+#             elegant_card = elegant_form(card)
+#             suit = elegant_card[0]
+#             rank = elegant_card[1]
+#             if len(elegant_card) == 3:
+#                 space = elegant_card[2]
+#             else:
+#                 space = ' '
+#
+#             lines[0].append('┌─────────┐')
+#             lines[1].append('│{}{}       │'.format(rank, space))
+#             lines[2].append('│         │')
+#             lines[3].append('│         │')
+#             lines[4].append('│    {}    │'.format(suit))
+#             lines[5].append('│         │')
+#             lines[6].append('│         │')
+#             lines[7].append('│       {}{}│'.format(space, rank))
+#             lines[8].append('└─────────┘')
+#
+#     for line in lines:
+#         print('   '.join(line))
+#
+#
+# def print_card_small(cards):
+#     ''' Nicely print a card or list of cards
+#     Args:
+#         card (string or list): The card(s) to be printed
+#     '''
+#     if cards is None:
+#         cards = [None]
+#     if isinstance(cards, str):
+#         cards = [cards]
+#
+#     lines = [[] for _ in range(5)]
+#
+#     for card in cards:
+#         if card is None:
+#             lines[0].append('┌───────┐')
+#             lines[1].append('│░░░░░░░│')
+#             lines[2].append('│░░░░░░░│')
+#             lines[3].append('│░░░░░░░│')
+#             lines[4].append('└───────┘')
+#         else:
+#             elegant_card = elegant_form(card)
+#             suit = elegant_card[0]
+#             rank = elegant_card[1]
+#             if len(elegant_card) == 3:
+#                 space = elegant_card[2]
+#             else:
+#                 space = ' '
+#
+#             lines[0].append('┌───────┐')
+#             lines[1].append('│{}{}     │'.format(rank, space))
+#             lines[2].append('│   {}   │'.format(suit))
+#             lines[3].append('│     {}{}│'.format(space, rank))
+#             lines[4].append('└───────┘')
+#
+#     for line in lines:
+#         print('   '.join(line))
+#
+#
+# # print_card_small([('s','10'), ('h', 'A'), None])
+# print(' '.join([]).split(' '))
+# print(''.split(' '))
 
-    return suits[card[0]] + rank
-
-
-def print_card(cards):
-    ''' Nicely print a card or list of cards
-    Args:
-        card (string or list): The card(s) to be printed
-    '''
-    if cards is None:
-        cards = [None]
-    if isinstance(cards, str):
-        cards = [cards]
-
-    lines = [[] for _ in range(9)]
-
-    for card in cards:
-        if card is None:
-            lines[0].append('┌─────────┐')
-            lines[1].append('│░░░░░░░░░│')
-            lines[2].append('│░░░░░░░░░│')
-            lines[3].append('│░░░░░░░░░│')
-            lines[4].append('│░░░░░░░░░│')
-            lines[5].append('│░░░░░░░░░│')
-            lines[6].append('│░░░░░░░░░│')
-            lines[7].append('│░░░░░░░░░│')
-            lines[8].append('└─────────┘')
+def aligns(string,length=20):
+    difference = length - len(string)  # 计算限定长度为20时需要补齐多少个空格
+    if difference == 0:  # 若差值为0则不需要补
+        return string
+    elif difference < 0:
+        print('错误：限定的对齐长度小于字符串长度!')
+        return None
+    new_string = ''
+    space = '　'
+    for i in string:
+        codes = ord(i)  # 将字符转为ASCII或UNICODE编码
+        if codes <= 126:  # 若是半角字符
+            new_string = new_string + chr(codes+65248) # 则转为全角
         else:
-            elegant_card = elegant_form(card)
-            suit = elegant_card[0]
-            rank = elegant_card[1]
-            if len(elegant_card) == 3:
-                space = elegant_card[2]
-            else:
-                space = ' '
-
-            lines[0].append('┌─────────┐')
-            lines[1].append('│{}{}       │'.format(rank, space))
-            lines[2].append('│         │')
-            lines[3].append('│         │')
-            lines[4].append('│    {}    │'.format(suit))
-            lines[5].append('│         │')
-            lines[6].append('│         │')
-            lines[7].append('│       {}{}│'.format(space, rank))
-            lines[8].append('└─────────┘')
-
-    for line in lines:
-        print('   '.join(line))
-
-
-def print_card_small(cards):
-    ''' Nicely print a card or list of cards
-    Args:
-        card (string or list): The card(s) to be printed
-    '''
-    if cards is None:
-        cards = [None]
-    if isinstance(cards, str):
-        cards = [cards]
-
-    lines = [[] for _ in range(5)]
-
-    for card in cards:
-        if card is None:
-            lines[0].append('┌───────┐')
-            lines[1].append('│░░░░░░░│')
-            lines[2].append('│░░░░░░░│')
-            lines[3].append('│░░░░░░░│')
-            lines[4].append('└───────┘')
-        else:
-            elegant_card = elegant_form(card)
-            suit = elegant_card[0]
-            rank = elegant_card[1]
-            if len(elegant_card) == 3:
-                space = elegant_card[2]
-            else:
-                space = ' '
-
-            lines[0].append('┌───────┐')
-            lines[1].append('│{}{}     │'.format(rank, space))
-            lines[2].append('│   {}   │'.format(suit))
-            lines[3].append('│     {}{}│'.format(space, rank))
-            lines[4].append('└───────┘')
-
-    for line in lines:
-        print('   '.join(line))
-
-
-# print_card_small([('s','10'), ('h', 'A'), None])
-print(' '.join([]).split(' '))
-print(''.split(' '))
+            new_string = new_string + i  # 若是全角，则不转换
+    return new_string + space*(difference)  # 返回补齐空格后的字符串
+str1 = '我是男朋友'
+str2 = 'yjy'
+print(aligns(str1),'|')
+print(aligns(str2),'|')

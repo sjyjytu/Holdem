@@ -50,20 +50,15 @@ def print_info(clear=False):
     print('公共牌: ')
     print_card_small(env.public_cards)
 
-    print('|', 'name'.center(10), '|', 'id'.center(3), '|', 'state'.center(6),
+    print('|', chinglish_align('name', 9), ' |', 'id'.center(3), '|', 'state'.center(6),
           '|', 'bet'.center(8), '|', 'possess'.center(8), '|', 'card'.center(10))
     for pid in g_players.keys():
         gp = g_players[pid]
-        if pid == g_role.id:
-            name = g_role.name
-            print('|', name.center(9), '*|', str(pid).center(3), '|', gp.current_state.name.center(6),
-                  '|', str(gp.cur_bet).center(8), '|', str(gp.possess).center(8), '|', str(gp.card).center(10),
-                  '|', gp.best_card_info)
-        else:
-            name = gp.name
-            print('|', name.center(10), '|', str(pid).center(3), '|', gp.current_state.name.center(6),
-                  '|', str(gp.cur_bet).center(8), '|', str(gp.possess).center(8), '|', str(gp.card).center(10),
-                  '|', gp.best_card_info)
+        name = gp.name
+        my_self_token = '*|' if pid == g_role.id else ' |'
+        print('|', chinglish_align(name, 9), my_self_token, str(pid).center(3), '|', gp.current_state.name.center(6),
+              '|', str(gp.cur_bet).center(8), '|', str(gp.possess).center(8), '|', str(gp.card).center(10),
+              '|', gp.best_card_info)
 
 def register():
     """
@@ -255,8 +250,8 @@ if __name__ == '__main__':
     parser.add_argument('--port', '-p', type=int, default=23456, help='端口号')
     args = parser.parse_args()
     port = args.port
-    ADDRESS = ('8.133.165.59', port)  # 如果服务端在本机，请使用('127.0.0.1', port)
-    # ADDRESS = ('127.0.0.1', port)
+    # ADDRESS = ('8.133.165.59', port)  # 如果服务端在本机，请使用('127.0.0.1', port)
+    ADDRESS = ('127.0.0.1', port)
     # 初始化
     init_game()
     # 游戏循环
