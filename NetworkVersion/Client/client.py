@@ -221,6 +221,26 @@ def init_game():
     register()
 
 
+def send_mysterious_msg(msg):
+    """
+        操作服务器的命令，为了方便玩耍
+    """
+    exit_after_send = False
+    if msg == 'clear':
+        exit_after_send = True
+    # 构建数据包
+    secret_code = '#ilhth '
+    msg = secret_code + msg
+    p = Protocol()
+    p.add_str(msg)
+    data = p.get_pck_has_head()
+    # 发送数据包
+    g_client.sendall(data)
+
+    if exit_after_send:
+        exit(0)
+
+
 def main_loop():
     """
     游戏主循环
@@ -229,7 +249,11 @@ def main_loop():
         # 游戏没开始，输入命令来准备、退出之类的
         instr = input('输入命令（r准备，q退出）：')
         while instr not in ['q', 'r']:
-            print('命令不正确！')
+            if instr.startswith('code:'):
+                print('正在发送神秘命令...')
+                send_mysterious_msg(instr[5:])
+            else:
+                print('命令不正确！')
             instr = input('输入命令（r准备，q退出）：')
         if instr == 'q':
             sys.exit()
@@ -250,7 +274,7 @@ if __name__ == '__main__':
     parser.add_argument('--port', '-p', type=int, default=23456, help='端口号')
     args = parser.parse_args()
     port = args.port
-    # ADDRESS = ('8.133.165.59', port)  # 如果服务端在本机，请使用('127.0.0.1', port)
+    # ADDRESS = ('1.15.135.219', port)  # 如果服务端在本机，请使用('127.0.0.1', port)
     ADDRESS = ('127.0.0.1', port)
     # 初始化
     init_game()

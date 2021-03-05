@@ -195,9 +195,14 @@ def play_a_game():
     refresh_player_public_info()
 
 
-def a_game_process():
+def a_game_process(log_file='info.log'):
     game_start()
+    with open(log_file, 'a+') as f:
+        f.write('*'*30)
     play_a_game()
+    with open(log_file, 'a+') as f:
+        f.write('*'*30)
+        f.write('\n')
     game_over()
 
 
@@ -249,7 +254,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         p = Protocol(pck)
         pck_type = p.get_str()
         # print('getting package %s...' % pck_type)
-        global ready_num, gm
+        global ready_num, gm, g_conn_pool
 
         if pck_type == 'register':
             name = p.get_str()
@@ -290,6 +295,16 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             gm.player_actions[pid] = action
             gm.player_action_flag[pid] = True
 
+        elif pck_type == '#ilhth restart' and ready_num == 0:
+            # 神秘命令，当有人没钱的时候可以重开， 这样就不用每次都重新打开游戏了
+            gm = None
+
+        elif pck_type == '#ilhth clear':
+            # 神秘命令，清场，这样服务器就可以一直挂着，不用每次都要去启动服务器了
+            ready_num = 0
+            gm = None
+            g_conn_pool = []  # 内存会泄露吗，python应该会自己清理
+
     def remove(self):
         # # 告诉各个客户端有玩家离线
         # ret = Protocol()
@@ -318,8 +333,8 @@ if __name__ == '__main__':
     INIT_POSSESS = args.init_chip
     BASE_CHIP = args.base_chip
     LEAST_PLAYER_NUM = args.least_player_num
-    # ADDRESS = ('0.0.0.0', port)  # 绑定地址
-    ADDRESS = ('127.0.0.1', port)  # 绑定地址
+    ADDRESS = ('0.0.0.0', port)  # 绑定地址
+    # ADDRESS = ('127.0.0.1', port)  # 绑定地址
     server = ThreadedTCPServer(ADDRESS, ThreadedTCPRequestHandler)
     # 新开一个线程运行服务端
     server_thread = threading.Thread(target=server.serve_forever)
@@ -330,14 +345,14 @@ if __name__ == '__main__':
     while True:
         sleep(3)
 # linux下后台运行不能使用input
-        cmd = input("""--------------------------
-# 输入1:查看当前在线人数
-# 输入2:关闭服务端
-# """)
-        if cmd == '1':
-            print("--------------------------")
-            print("当前在线人数：", len(g_conn_pool))
-        elif cmd == '2':
-            server.shutdown()
-            server.server_close()
-            exit()
+#         cmd = input("""--------------------------
+# # 输入1:查看当前在线人数
+# # 输入2:关闭服务端
+# # """)
+#         if cmd == '1':
+#             print("--------------------------")
+#             print("当前在线人数：", len(g_conn_pool))
+#         elif cmd == '2':
+#             server.shutdown()
+#             server.server_close()
+#             exit()

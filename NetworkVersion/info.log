@@ -1,0 +1,73 @@
+***************
+BB: 0, left_players: 2, pool_possess: 300, max_bet: 200
+public_cards: 
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 200 | possess: 9800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 100 | possess: 9900
+
+
+BB: 0, left_players: 2, pool_possess: 400, max_bet: 200
+public_cards: 
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 200 | possess: 9800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 200 | possess: 9800
+
+
+BB: 0, left_players: 2, pool_possess: 400, max_bet: 200
+public_cards: 
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 200 | possess: 9800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 200 | possess: 9800
+
+
+BB: 0, left_players: 2, pool_possess: 400, max_bet: 200
+public_cards: ♥7 ◆5 ♣K
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 200 | possess: 9800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 200 | possess: 9800
+
+
+BB: 0, left_players: 2, pool_possess: 400, max_bet: 200
+public_cards: ♥7 ◆5 ♣K
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 200 | possess: 9800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 200 | possess: 9800
+
+
+BB: 0, left_players: 2, pool_possess: 400, max_bet: 200
+public_cards: ♥7 ◆5 ♣K
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 200 | possess: 9800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 200 | possess: 9800
+
+
+BB: 0, left_players: 2, pool_possess: 400, max_bet: 200
+public_cards: ♥7 ◆5 ♣K ♥Q
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 200 | possess: 9800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 200 | possess: 9800
+
+
+BB: 0, left_players: 2, pool_possess: 1400, max_bet: 1200
+public_cards: ♥7 ◆5 ♣K ♥Q
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 200 | possess: 9800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 1200 | possess: 8800
+
+
+BB: 0, left_players: 2, pool_possess: 2400, max_bet: 1200
+public_cards: ♥7 ◆5 ♣K ♥Q
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 1200 | possess: 8800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 1200 | possess: 8800
+
+
+BB: 0, left_players: 2, pool_possess: 2400, max_bet: 1200
+public_cards: ♥7 ◆5 ♣K ♥Q ♣5
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 1200 | possess: 8800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 1200 | possess: 8800
+
+
+BB: 0, left_players: 2, pool_possess: 2400, max_bet: 1200
+public_cards: ♥7 ◆5 ♣K ♥Q ♣5
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 1200 | possess: 8800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 1200 | possess: 8800
+
+
+BB: 0, left_players: 2, pool_possess: 2400, max_bet: 1200
+public_cards: ♥7 ◆5 ♣K ♥Q ♣5
+player 0 | hand: ♣4 ♥8 | state: NORMAL | bet: 1200 | possess: 8800
+player 1 | hand: ◆7 ◆10 | state: NORMAL | bet: 1200 | possess: 8800
+
+***************

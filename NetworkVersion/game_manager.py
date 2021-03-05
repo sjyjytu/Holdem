@@ -75,12 +75,27 @@ class GameManager:
                   player.current_state,
                   ' | 本局下注: %d | 总筹码: %d' % (player.current_bet, player.possess))
 
+    def write_info(self, log_file='info.log'):
+        with open(log_file, 'a+') as f:
+            f.write('\n')
+            f.write('BB: {}, left_players: {}, pool_possess: {}, max_bet: {}\n'
+                    .format(self.alive_player_id[self.BB_pos], self.env.current_left_player_num,
+                            self.env.pool_possess, self.env.current_max_bet))
+            f.write('public_cards: ' + ' '.join([suit2word[card.suit] + card.rank for card in self.env.public_cards])+'\n')
+            for pid in self.alive_player_id:
+                player = self.players[pid]
+                f.write('player %d | hand: %s | state: %s | bet: %d | possess: %d\n' %
+                        (pid, ' '.join([suit2word[card.suit] + card.rank for card in player.card]),
+                         player.current_state.name, player.current_bet, player.possess))
+            f.write('\n')
+
     def init_env(self, BB_pos, current_left_player_num):
         self.env = Env(BB_pos, current_left_player_num, self.base_chip)
 
     def update_env(self):
         # TODO: 更新环境，记录玩家动作
-        self.print_info()
+        # self.print_info()
+        self.write_info()
 
     def check_match_state(self):
         if self.env.current_left_player_num == 1:
