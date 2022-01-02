@@ -344,7 +344,7 @@ if __name__ == '__main__':
     if ip == '':
         ip = '192.168.1.110'
     ADDRESS = (ip, port)  # 绑定地址
-    ADDRESS = ('127.0.0.1', port)  # 绑定地址
+    # ADDRESS = ('127.0.0.1', port)  # 绑定地址
     server = ThreadedTCPServer(ADDRESS, ThreadedTCPRequestHandler)
     # 新开一个线程运行服务端
     server_thread = threading.Thread(target=server.serve_forever)

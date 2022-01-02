@@ -4,9 +4,6 @@ import sys
 print(sys.path[0])
 sys.path.append(sys.path[0] + '/../..')
 
-import os
-from threading import Thread, Event
-
 # import pygame
 import socket  # 导入 socket 模块
 
@@ -101,15 +98,9 @@ def send_mysterious_msg(msg):
         exit(0)
 
 
-from Client.client_gui import Ui_MainWindow
-from Client.login_gui import Ui_Login_MainWindow
-
-import sys
-import time
-from PyQt5.QtCore import QThread, pyqtSignal
+from NetworkVersion.Client.client_gui import Ui_MainWindow
+from NetworkVersion.Client.login_gui import Ui_Login_MainWindow
 from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5 import QtGui
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QDockWidget, QListWidget
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import *
@@ -313,9 +304,9 @@ class MyMainForm(QMainWindow, Ui_MainWindow):
         # 公共牌
         for i, card in enumerate(env.public_cards):
             card_id = self.card2card_pic_idx(card)
-            self.public_cards[i].setPixmap(QtGui.QPixmap(f"../../Pic/{card_id}.GIF"))
+            self.public_cards[i].setPixmap(QtGui.QPixmap(f"Pic/{card_id}.GIF"))
         for i in range(len(env.public_cards), 5):
-            self.public_cards[i].setPixmap(QtGui.QPixmap("../../Pic/53.GIF"))
+            self.public_cards[i].setPixmap(QtGui.QPixmap("Pic/53.GIF"))
 
         # 玩家信息
         for i, pid in enumerate(g_players.keys()):
@@ -347,7 +338,7 @@ class MyMainForm(QMainWindow, Ui_MainWindow):
                 else:
                     card_id = 53
                 item = QtWidgets.QTableWidgetItem()
-                icon = QtGui.QIcon(f'../../Pic/{card_id}.GIF')
+                icon = QtGui.QIcon(f'Pic/{card_id}.GIF')
                 item.setIcon(QtGui.QIcon(icon))
                 self.tableWidget.setItem(i, 5 + j, item)
 
