@@ -83,7 +83,7 @@ def refresh_player_open_card():
     ret.add_int32(gm.env.current_left_player_num)
     for r in g_conn_pool:
         pid = r.id
-        if gm.players[pid].current_state != Player_State.FOLD:
+        if gm.players[pid].current_state not in [Player_State.FOLD, Player_State.OUT]:
             ret.add_int32(pid)
             ret.add_str(" ".join(gm.get_player_card_by_pid(pid)))
             ret.add_str(gm.players[pid].current_chosen_card_info.best_card_type +
@@ -120,7 +120,8 @@ def game_over():
     ret.add_str("game_over")
     # TODO 清理准备状态等 / print info
     global ready_num
-    ready_num = 0
+    # ready_num = 0
+    ready_num = len(g_conn_pool) - gm.alive_player_num
     for r in g_conn_pool:
         r.is_ready = False
         r.conn.sendall(ret.get_pck_has_head())
@@ -237,6 +238,12 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
                 print("---------------------------")
                 print("玩家：【%s】掉线啦。" % self.get_conn().name)
                 self.remove()
+                global ready_num, gm, g_conn_pool
+                if len(g_conn_pool) == 0:
+                    print('所有玩家已离开，重置！')
+                    ready_num = 0
+                    gm = None
+                    g_conn_pool = []  # 内存会泄露吗，python应该会自己清理
                 break
 
     def finish(self):
@@ -313,7 +320,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         # for r in g_conn_pool:
         #     if r != self.get_conn():
         #         r.conn.sendall(ret.get_pck_has_head())
-        # g_conn_pool.remove(self.get_conn())
+        g_conn_pool.remove(self.get_conn())
         pass
 
 
@@ -333,8 +340,11 @@ if __name__ == '__main__':
     INIT_POSSESS = args.init_chip
     BASE_CHIP = args.base_chip
     LEAST_PLAYER_NUM = args.least_player_num
-    ADDRESS = ('0.0.0.0', port)  # 绑定地址
-    # ADDRESS = ('127.0.0.1', port)  # 绑定地址
+    ip = input('输入服务器ip（直接回车使用默认）：')
+    if ip == '':
+        ip = '192.168.1.110'
+    ADDRESS = (ip, port)  # 绑定地址
+    ADDRESS = ('127.0.0.1', port)  # 绑定地址
     server = ThreadedTCPServer(ADDRESS, ThreadedTCPRequestHandler)
     # 新开一个线程运行服务端
     server_thread = threading.Thread(target=server.serve_forever)

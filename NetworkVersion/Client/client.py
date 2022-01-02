@@ -60,6 +60,7 @@ def print_info(clear=False):
               '|', str(gp.cur_bet).center(8), '|', str(gp.possess).center(8), '|', str(gp.card).center(10),
               '|', gp.best_card_info)
 
+
 def register():
     """
     告诉服务端有新玩家加入
@@ -134,7 +135,10 @@ def pck_handler(pck):
 
     elif pck_type == 'env_info':
         str_public_cards = p.get_str()
-        public_cards = str_public_cards.split(' ')
+        if str_public_cards == '':
+            public_cards = []
+        else:
+            public_cards = str_public_cards.split(' ')
         env.update(public_cards, p.get_int32(), p.get_int32(), p.get_int32(), p.get_int32())
         print_info(True)
 
@@ -275,6 +279,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     port = args.port
     # ADDRESS = ('1.15.135.219', port)  # 如果服务端在本机，请使用('127.0.0.1', port)
+    ADDRESS = ('192.168.1.112', port)
     ADDRESS = ('127.0.0.1', port)
     # 初始化
     init_game()

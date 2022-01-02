@@ -217,7 +217,10 @@
 # print(aligns(str1),'|')
 # print(aligns(str2),'|')
 
-with open('a.log', 'a+') as f:
-    f.write('\nhahah')
+# with open('a.log', 'a+') as f:
+#     f.write('\nhahah')
 
-
+a = " ".join([])
+print(a)
+b = a.split(' ')
+print(b)

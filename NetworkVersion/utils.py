@@ -23,6 +23,7 @@ class Player_State(Enum):
     NORMAL = 1
     ALLIN = 2
     FOLD = 3
+    OUT = 4
 
 
 Chosen_Card_Info = collections.namedtuple('Chosen_Card_Info', ['best_card_type', 'best_card', 'best_card_value'])

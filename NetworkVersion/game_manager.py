@@ -1,8 +1,12 @@
+# coding: utf-8
+
 from NetworkVersion.utils import *
 from NetworkVersion.evaluate_card import choose_own_biggest_card, compare_hands
 from NetworkVersion.Server.protocal import Protocol
 import time
 suit2word = {'spades': '♠', 'hearts': '♥', 'clubs': '♣', 'diamonds': '◆'}
+TIMEOUT = 90
+CHECK_ROUND_TIME = 0.5
 
 
 class GameManager:
@@ -94,8 +98,8 @@ class GameManager:
 
     def update_env(self):
         # TODO: 更新环境，记录玩家动作
-        # self.print_info()
-        self.write_info()
+        self.print_info()
+        # self.write_info()
 
     def check_match_state(self):
         if self.env.current_left_player_num == 1:
@@ -119,6 +123,8 @@ class GameManager:
             self.players[pidx].reset_all_state()  # 重置所有玩家的状态
             if self.players[pidx].possess > 0:
                 new_alive_player_id.append(pidx)
+            else:
+                self.players[pidx].current_state = Player_State.OUT
         self.alive_player_id = new_alive_player_id
         self.alive_player_num = len(new_alive_player_id)
 
@@ -180,9 +186,9 @@ class GameManager:
 
         print('ask %d for action' % pid)
         # 等待返回gm用一个数组flag来记录
-        timeout = 0  # 等待玩家40秒
-        while not self.player_action_flag[pid] and timeout < 80:
-            time.sleep(0.5)
+        timeout = 0  # 等待玩家90秒(TIMEOUT)
+        while not self.player_action_flag[pid] and timeout*CHECK_ROUND_TIME < TIMEOUT:
+            time.sleep(CHECK_ROUND_TIME)
             timeout += 1
         action = Action("FOLD")  # 超时默认弃牌
         if self.player_action_flag[pid]:
