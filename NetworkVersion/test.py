@@ -220,7 +220,98 @@
 # with open('a.log', 'a+') as f:
 #     f.write('\nhahah')
 
-a = " ".join([])
-print(a)
-b = a.split(' ')
-print(b)
+# a = " ".join([])
+# print(a)
+# b = a.split(' ')
+# print(b)
+
+# import sys
+# from PyQt5.QtMultimedia import QSound
+# from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout
+#
+#
+# class Demo(QWidget):
+#     def __init__(self):
+#         super(Demo, self).__init__()
+#         self.sound = QSound('../Voice/chip.wav')
+#         self.sound.setLoops(2)                # 1
+#
+#         self.play_btn = QPushButton('Play Sound', self)
+#         self.stop_btn = QPushButton('Stop Sound', self)
+#         self.play_btn.clicked.connect(self.sound.play)
+#         self.stop_btn.clicked.connect(self.sound.stop)
+#
+#         self.h_layout = QHBoxLayout()
+#         self.h_layout.addWidget(self.play_btn)
+#         self.h_layout.addWidget(self.stop_btn)
+#         self.setLayout(self.h_layout)
+#
+#
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     demo = Demo()
+#     demo.show()
+#     sys.exit(app.exec_())
+
+
+import sys
+from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtMultimedia import QSoundEffect
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QSlider, QCheckBox, QHBoxLayout, QVBoxLayout
+
+
+class Demo(QWidget):
+    def __init__(self):
+        super(Demo, self).__init__()
+        self.sound_effect = QSoundEffect(self)
+        self.sound_effect.setSource(QUrl.fromLocalFile('../Voice/ticker2.wav'))    # 1
+        self.sound_effect.setVolume(1.0)                                # 2
+
+        self.sound_effect2 = QSoundEffect(self)
+        self.sound_effect2.setSource(QUrl.fromLocalFile('../Voice/dushen.wav'))  # 1
+        self.sound_effect2.setVolume(0.1)  # 2
+        self.sound_effect2.play()
+        print(self.sound_effect.isPlaying())
+        print(self.sound_effect2.isPlaying())
+
+        self.play_btn = QPushButton('Play Sound', self)
+        self.play_btn.clicked.connect(self.sound_effect.play)
+
+        self.slider = QSlider(Qt.Horizontal, self)                      # 3
+        self.slider.setRange(0, 10)
+        self.slider.setValue(10)
+        self.slider.valueChanged.connect(self.set_volume_func)
+
+        self.checkbox = QCheckBox('Mute', self)                         # 4
+        self.checkbox.stateChanged.connect(self.mute_func)
+
+        self.h_layout = QHBoxLayout()
+        self.v_layout = QVBoxLayout()
+        self.h_layout.addWidget(self.play_btn)
+        self.h_layout.addWidget(self.checkbox)
+        self.v_layout.addWidget(self.slider)
+        self.v_layout.addLayout(self.h_layout)
+        self.setLayout(self.v_layout)
+
+    def set_volume_func(self):
+        self.sound_effect.setVolume(self.slider.value()/10)
+        if self.sound_effect.isPlaying():
+            self.sound_effect.stop()
+        a = QUrl.fromLocalFile('../Voice/dushen.wav')
+        print(a)
+        self.sound_effect.setSource(a)
+        self.sound_effect.setVolume(0.2)
+        self.sound_effect.play()
+
+    def mute_func(self):
+        if self.sound_effect.isMuted():
+            self.sound_effect.setMuted(False)
+        else:
+            self.sound_effect.setMuted(True)
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    demo = Demo()
+    demo.show()
+    sys.exit(app.exec_())

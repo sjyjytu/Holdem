@@ -106,6 +106,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QDockWidget, QListWidget
 from PyQt5.QtGui import *
+from PyQt5.QtMultimedia import QSound, QSoundEffect
 
 
 class Login_window(QtWidgets.QMainWindow, Ui_Login_MainWindow):
@@ -156,9 +157,25 @@ class MyMainForm(QMainWindow, Ui_MainWindow):
         self.timer.timeout.connect(self.update_timer)
         self.timeout = TIMEOUT
 
+        self.sounds = {}
+        for s in ['chip', 'deal', 'dushen', 'fold', 'raise', 'ticker2']:
+            self.sounds[s] = QUrl.fromLocalFile(f'./Voice/{s}.wav')
+
+        self.backgroundPlayer = QSoundEffect(self)
+        self.effectPlayer = QSoundEffect(self)
+        self.backgroundPlayer.setVolume(0.2)
+        self.effectPlayer.setVolume(1)
+
+    def bg_play(self, name):
+        self.backgroundPlayer.stop()
+        self.backgroundPlayer.setSource(self.sounds[name])
+        self.backgroundPlayer.play()
+
     def update_timer(self):
         if self.timeout > 0:
             self.timeout -= 1
+            if not self.backgroundPlayer.isPlaying():
+                self.bg_play('ticker2')
         else:
             self.timer.stop()
         self.label_timer.setText(str(self.timeout))
@@ -167,6 +184,7 @@ class MyMainForm(QMainWindow, Ui_MainWindow):
         money = 0
         send_action(1, money)
         self.executed_action()
+        self.sounds['fold'].play()
 
     def checkcall(self):
         money = 0
@@ -179,7 +197,12 @@ class MyMainForm(QMainWindow, Ui_MainWindow):
             reply = QMessageBox.warning(self, "警告", "请输入正确的加注金额！")
         else:
             send_action(3, int(money))
+            self.lineEdit_raise.clear()
             self.executed_action()
+
+            if int(money) >= g_players[g_role.id].possess:
+                # allin
+                self.bg_play('dushen')
 
     def ask_for_action(self):
         self.timeout = TIMEOUT
@@ -192,6 +215,8 @@ class MyMainForm(QMainWindow, Ui_MainWindow):
         self.timer.stop()
         self.label_timer.setVisible(False)
         self.widget_action.setVisible(False)
+        if self.backgroundPlayer.isPlaying():
+            self.backgroundPlayer.stop()
 
     def init_game(self, ip, port, name):
         global g_role, g_players
@@ -273,6 +298,7 @@ class MyMainForm(QMainWindow, Ui_MainWindow):
         elif pck_type == 'game_over':
             if g_players[g_role.id].current_state != Player_State.OUT:
                 reply = QMessageBox.warning(self, "请准备", "游戏结束！请按OK准备下一局")
+                self.backgroundPlayer.stop()
                 send_get_ready()
 
         elif pck_type == 'logout':  # 玩家掉线
